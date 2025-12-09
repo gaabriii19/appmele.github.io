@@ -1,284 +1,102 @@
-/*
-====================================
-  ESTILOS GLOBALES Y TIPOGRAFÍA
-====================================
-*/
-:root {
-    --color-primario: #38761d; /* Verde Petanca */
-    --color-secundario: #007bff; /* Azul Botón Secundario */
-    --color-fondo: #D2CC99; /* Fondo gris claro */
-    --color-tarjeta: #ffffff; /* Fondo blanco para tarjetas */
-    --color-exito: #28a745; /* Verde para éxito/equipo */
-    --sombra: 0 4px 12px rgba(0, 0, 0, 0.1);
+:root{
+  --primary: #d2cc99; /* color elegido */
+  --dark: #1f2b20;
+  --accent: #8a1f1f; /* ligero borgoña */
+  --bg: #f6f5ee;
+  --card: #ffffff;
+  --muted: #6b6b6b;
+  --radius: 10px;
+  font-family: 'Montserrat', Arial, sans-serif;
 }
 
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    padding: 10px;
-    background-color: var(--color-fondo);
-    color: #333;
-    line-height: 1.6;
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background: linear-gradient(180deg,#f8f7f0 0%, #eef0e6 100%);
+  color:var(--dark);
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
 }
 
-.logo-escudo {
-    position: fixed;         /* Fija la imagen a la ventana del navegador */
-    top: 7%;                /* Inicia el posicionamiento desde la mitad de la altura */
-    left: 860px;              /* **Alinea a la izquierda con un pequeño margen** */
-    
-    transform: translateY(-50%); /* Ajusta hacia arriba para centrar verticalmente */
-    
-    width: 90px;             /* **Tamaño pequeño (ajustar este valor si lo quieres más grande/pequeño)** */
-    height: auto;            /* Mantiene la proporción de la imagen */
-    z-index: 10;             /* Asegura que esté por encima de cualquier otro elemento de fondo */
-    pointer-events: none;    /* Ignora los clics */
+.app-header{
+  display:flex;
+  gap:16px;
+  align-items:center;
+  padding:16px 24px;
+  background:linear-gradient(90deg,var(--primary), #cfc69a);
+  border-bottom:4px solid rgba(0,0,0,0.06);
 }
 
-h1 {
-    font-size: 24px;
-    color: var(--color-primario);
-    border-bottom: 2px solid var(--color-primario);
-    padding-bottom: 10px;
+.app-header .escudo{
+  width:78px;
+  height:78px;
+  object-fit:contain;
+  border-radius:8px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.12);
 }
 
-h3 {
-    font-size: 18px;
-    color: #555;
-    margin-top: 0;
+.app-header h1{margin:0;font-size:20px;font-weight:700}
+.subtitle{margin:0;font-size:12px;color:var(--dark);opacity:0.9}
+
+.container{
+  max-width:980px;
+  margin:20px auto;
+  padding:12px;
 }
 
-small {
-    display: block;
-    color: #777;
-    margin-top: 5px;
-    font-size: 0.75em;
+.card{
+  background:var(--card);
+  padding:16px;
+  border-radius:var(--radius);
+  box-shadow: 0 8px 24px rgba(15,20,10,0.06);
+  margin-bottom:16px;
 }
 
-/*
-====================================
-  TARJETAS Y CONTENEDORES
-====================================
-*/
-.card {
-    background-color: var(--color-tarjeta);
-    padding: 25px;
-    border-radius: 12px;
-    margin-bottom: 25px;
-    box-shadow: var(--sombra);
-    transition: transform 0.3s ease;
+.row{display:flex;gap:10px;align-items:center}
+.row.small{font-size:13px}
+.mt{margin-top:12px}
+input[type="text"], input[type="number"], input{
+  padding:10px 12px;
+  border-radius:8px;
+  border:1px solid #e1e1d6;
+  outline:none;
+  flex:1;
+  font-size:14px;
+}
+button{cursor:pointer;border:0;padding:10px 14px;border-radius:10px;font-weight:600}
+button.primary{background:var(--dark); color:white}
+button.sec{background:#eee;color:var(--dark)}
+button.secundaria{background:#ddd}
+button.rojo{background:#c94e4e;color:white;padding:6px 8px;border-radius:8px}
+
+.lista{margin-top:10px}
+.jugador{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px;border-radius:8px;margin-bottom:6px;background:#fbfbf9;border:1px solid #f0f0e9;
+}
+.jugador span{font-weight:600}
+
+.tabla{
+  width:100%;border-collapse:collapse;margin-top:8px;font-size:14px;
+}
+.tabla th, .tabla td{
+  padding:8px;border-bottom:1px solid #f0f0e9;text-align:center;
+}
+.equipoBox{
+  background:linear-gradient(180deg, #ffffff, #fafaf6);
+  border-radius:8px;padding:8px;margin-bottom:8px;border:1px solid #eee;
+}
+.pistaLabel{
+  display:inline-block;padding:6px 10px;border-radius:999px;background:var(--primary);color:var(--dark);font-weight:700;margin-left:8px;
 }
 
-.card:hover {
-    transform: translateY(-2px);
-}
+.muted{color:var(--muted);font-size:13px}
+.small{font-size:13px}
+.center{text-align:center}
 
-/*
-====================================
-  FORMULARIOS E INPUTS
-====================================
-*/
-.input-group {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 15px;
-    align-items: stretch; /* Asegura que los inputs y botones tengan la misma altura */
-}
-
-input[type="text"],
-input[type="number"] {
-    flex-grow: 1;
-    padding: 12px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    box-sizing: border-box;
-    transition: border-color 0.3s;
-}
-
-input:focus {
-    border-color: var(--color-primario);
-    outline: none;
-}
-
-/*
-====================================
-  BOTONES
-====================================
-*/
-button {
-    padding: 12px 20px;
-    border: none;
-    border-radius: 6px;
-    color: white;
-    cursor: pointer;
-    font-weight: bold;
-    transition: background-color 0.3s ease, transform 0.1s;
-    white-space: nowrap; /* Evita que el texto se rompa */
-}
-
-button:active {
-    transform: scale(0.98);
-}
-
-button:hover {
-    opacity: 0.9;
-}
-
-/* Botón Primario (Generar) */
-button {
-    background-color: var(--color-primario);
-}
-
-/* Botón Secundario (Iniciar Sorteos / Calcular Ranking) */
-button.secundaria {
-    background-color: var(--color-secundario);
-}
-
-/* Botón de Peligro (Eliminar Jugador) */
-button.rojo {
-    background-color: #dc3545;
-    padding: 5px 10px; /* Más pequeño para el botón X */
-}
-
-/*
-====================================
-  LISTA DE JUGADORES
-====================================
-*/
-.lista-jugadores {
-    margin-top: 15px;
-    padding-top: 10px;
-    border-top: 1px solid #eee;
-}
-
-.jugador-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 15px;
-    margin-bottom: 8px;
-    background: #e9f5e9; /* Fondo suave */
-    border: 1px solid #c8e6c9;
-    border-radius: 6px;
-}
-
-/*
-====================================
-  TABLAS Y ENFRENTAMIENTOS
-====================================
-*/
-.tabla-enfrentamientos {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 15px;
-    font-size: 0.95em;
-    table-layout: fixed; /* Ayuda a controlar el ancho de las columnas */
-}
-
-.tabla-enfrentamientos th,
-.tabla-enfrentamientos td {
-    border: 1px solid #ddd;
-    padding: 10px;
-    text-align: center;
-}
-
-.tabla-enfrentamientos th {
-    background-color: #e0e0e0;
-    color: #333;
-    font-weight: 600;
-}
-
-/* Ancho específico para inputs de puntos */
-.tabla-enfrentamientos td:nth-child(2),
-.tabla-enfrentamientos td:nth-child(3) {
-    width: 80px;
-}
-
-.tabla-enfrentamientos input[type="number"] {
-    width: 60px;
-    padding: 5px;
-    text-align: center;
-    margin: 0;
-    border: 1px solid #ccc;
-}
-
-/* Estilo para el contenido de los equipos (ID/Nombre) */
-.enfrentamiento-row td:first-child,
-.enfrentamiento-row td:last-child {
-    font-weight: 500;
-    text-align: left;
-    word-break: break-word; /* Para nombres largos */
-}
-
-/* Estilo para la tabla de Ranking */
-#ranking-output th:nth-child(3) {
-    width: 25%; /* Más espacio para el nombre */
-}
-
-/*
-====================================
-  RESPONSIVE (MÓVILES)
-====================================
-*/
-@media (max-width: 600px) {
-    h1 {
-        font-size: 20px;
-    }
-    
-    .card {
-        padding: 15px;
-    }
-
-    .input-group {
-        flex-direction: column;
-    }
-    
-    .input-group button {
-        width: 100%;
-        margin-right: 0;
-        margin-top: 10px;
-    }
-
-    .tabla-enfrentamientos,
-    .tabla-enfrentamientos thead,
-    .tabla-enfrentamientos tbody,
-    .tabla-enfrentamientos th,
-    .tabla-enfrentamientos td,
-    .tabla-enfrentamientos tr {
-        display: block; /* La tabla se vuelve un bloque para móviles */
-    }
-
-    .tabla-enfrentamientos thead tr {
-        position: absolute;
-        top: -9999px;
-        left: -9999px; /* Oculta los encabezados de la tabla original */
-    }
-
-    .tabla-enfrentamientos tr {
-        border: 1px solid #ccc;
-        margin-bottom: 10px;
-    }
-
-    .tabla-enfrentamientos td {
-        border: none;
-        border-bottom: 1px solid #eee;
-        position: relative;
-        padding-left: 50%;
-        text-align: right;
-    }
-
-    /* Etiquetas simuladas para las celdas en móvil */
-    .tabla-enfrentamientos td::before {
-        content: attr(data-label);
-        position: absolute;
-        left: 0;
-        width: 45%;
-        padding-left: 10px;
-        font-weight: bold;
-        text-align: left;
-    }
-    
-    /* Etiquetado para la tabla de Enfrentamientos */
-    .tabla-enfrentamientos tr:nth-child(1) td:nth-child(1)::before { content: "Equipo A:"; }
-    .tabla-enfrentamientos tr:nth-child(1) td:nth-child(2)::before { content: "Puntos A:"; }
-    .tabla-enfrentamientos tr:nth-child(1) td:nth-child(3)::before { content: "Puntos B:"; }
-    .tabla-enfrentamientos tr:nth-child(1) td:nth-child(4)::before { content: "Equipo B:"; }
+/* Responsive */
+@media (max-width:700px){
+  .row{flex-direction:column;align-items:stretch}
+  .app-header h1{font-size:16px}
+  .app-header .escudo{width:64px;height:64px}
 }
