@@ -352,7 +352,7 @@ function renderRanking(arr){
   container.innerHTML = `
     <table class="tabla" style="width:100%">
       <thead>
-        <tr><th>Pos</th><th>ID</th><th>Jugador</th><th>Vict</th><th>Der</th><th>BF</th><th>BC</th><th>Avg</th></tr>
+        <tr><th>Pos</th><th>ID</th><th>Jugador</th><th>PG</th><th>PP</th><th>PF</th><th>PC</th><th>Avg</th></tr>
       </thead>
       <tbody>${rows}</tbody>
     </table>
