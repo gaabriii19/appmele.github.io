@@ -1,372 +1,77 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Torneo de Petanca - WebApp</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Torneo Petanca - Club Torredonjimeno</title>
+
+<!-- Fuentes -->
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+<!-- Estilos -->
 <link rel="stylesheet" href="style.css">
+
+<!-- Librerías para exportar PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <link rel="icon" type="image/png" href="ESCUDO CP TORREDONJIMENO OK.png">
 </head>
-
-
-
 <body>
-<img src="ESCUDO CP TORREDONJIMENO OK.png" alt="Escudo Club de Petanca Torredonjimeno" class="logo-escudo">
-<h1>App para cuadrante de Torneo de Petanca Estilo MELÉ <br> <small>Creada y diseñada por Gabriel Santiago © para el CLUB DEPORTIVO PETANCA TORREDONJIMENO</small></h1>
-<p>Programa preparado para 10 Pistas</p>
-<ol>- Se predominan enfrentamientos en DUPLETAS, en casos de descuadres, se añaden TRIPLETAS.</ol>
-<ol>- Clasificación individual por puntos.</ol>
-<ol>- Primero prevalece el numero de partidas ganadas.</ol>
-<ol>- Segundo, prevalece el total con la diferencia de puntos mas alta.</ol>
-<ol>- Tercero, prevalece y en caso de empate ante la situación anterior; La puntuación mas alta en los Puntos a Favor.</ol>
-<div class="card">
-    <h3>1. Registro de Jugadores</h3>
-    <div class="input-group">
-        <input type="text" id="nombreJugador" placeholder="Nombre del Jugador" required />
-        <button onclick="agregarJugador()">Añadir Jugador</button>
+<header class="app-header">
+  <img src="ESCUDO CP TORREDONJIMENO OK.png" alt="Escudo" class="escudo">
+  <div>
+    <h1>Club Deportivo Petanca Torredonjimeno</h1>
+    <p class="subtitle">App para cuadrante de Torneo (Estilo MELÉ) — Creada por Gabriel Santiago ©</p>
+  </div>
+</header>
+
+<main class="container">
+  <section class="card">
+    <h2>1. Registro de jugadores</h2>
+    <div class="row">
+      <input id="nombreJugador" placeholder="Nombre del jugador/ra" />
+      <button id="btnAdd">Añadir</button>
     </div>
-    <div id="lista-jugadores-output" class="lista-jugadores">
-        </div>
-    <br>
-    <button class="secundaria" onclick="iniciarSorteos()">Iniciar Sorteos (Total: <span id="numJugadoresDisplay">0</span>)</button>
-</div>
-<div class="card" id="resultado" style="display:none;">
-    <h2>2. Resultados y Sorteos</h2>
-</div>
+    <p class="muted">Mínimo 8 jugadores. Máximo 60.</p>
 
-<div class="card" id="ranking-container" style="display:none;">
-    <h3>3. Clasificación y Ranking</h3>
-    <button class="secundaria" onclick="calcularRanking()">Calcular Ranking</button>
-    <div id="ranking-output"></div>
-</div>
+    <div id="listaJugadores" class="lista"></div>
 
+    <div class="row mt">
+      <button id="btnStart" class="primary">Iniciar Sorteos (Generar 3 rondas)</button>
+      <button id="btnClear" class="sec">Limpiar todo</button>
+    </div>
 
-<script>
-// Estructura de datos para almacenar a los jugadores con nombre y ID
-let listaJugadores = []; 
-let enfrentamientosGenerados = [];
+    <div class="row mt small">
+      <label><input id="optAvoidRepeat" type="checkbox" checked/> Evitar repetir compañeros siempre que sea posible</label>
+      <label><input id="optAssignPistas" type="checkbox" checked/> Mostrar control visual de pistas</label>
+    </div>
+  </section>
 
-// -------------------------------
-// REGISTRO DE JUGADORES
-// -------------------------------
+  <section id="sorteosCard" class="card" style="display:none;">
+    <h2>2. Sorteos y resultados</h2>
+    <div id="rondasContainer"></div>
+    <div class="row mt">
+      <button id="btnSaveResults" class="primary">Guardar resultados</button>
+      <button id="btnKiosk" class="sec">Modo Kiosko</button>
+    </div>
+  </section>
 
-/**
- * Añade un jugador a la lista si tiene nombre.
- */
-function agregarJugador() {
-    const inputNombre = document.getElementById("nombreJugador");
-    const nombre = inputNombre.value.trim();
+  <section id="rankingCard" class="card" style="display:none;">
+    <h2>3. Clasificación y Ranking</h2>
+    <div class="row">
+      <button id="btnCalcRanking" class="primary">Calcular Ranking Final</button>
+      <button id="btnWhats" class="sec">Compartir por WhatsApp</button>
+      <button id="btnPDF" class="sec">Exportar a PDF</button>
+    </div>
+    <div id="rankingOutput" class="mt"></div>
+  </section>
 
-    if (nombre === "") {
-        alert("Por favor, introduce el nombre del jugador.");
-        return;
-    }
-    
-    const nuevoId = listaJugadores.length + 1;
+  <section class="card small muted">
+    Programa creado y diseñado por Gabriel Santiago ©, para el Club Deportivo de Petanca Torredonjimeno
+  </section>
+</main>
 
-    listaJugadores.push({
-        id: nuevoId,
-        nombre: nombre
-    });
-
-    inputNombre.value = ""; // Limpiar el campo
-    actualizarListaJugadores();
-}
-
-/**
- * Elimina un jugador por su ID y reordena la lista.
- */
-function eliminarJugador(id) {
-    // Filtrar la lista, manteniendo solo los que no coinciden con el ID
-    listaJugadores = listaJugadores.filter(j => j.id !== id);
-    
-    // Reasignar IDs (números de torneo) para mantener la secuencia (1, 2, 3...)
-    listaJugadores = listaJugadores.map((jugador, index) => ({
-        id: index + 1,
-        nombre: jugador.nombre
-    }));
-    
-    actualizarListaJugadores();
-}
-
-/**
- * Dibuja la lista de jugadores en el HTML.
- */
-function actualizarListaJugadores() {
-    const listaOutput = document.getElementById("lista-jugadores-output");
-    let html = '';
-    
-    if (listaJugadores.length === 0) {
-        html = '<p style="color:#666;">Aún no hay jugadores registrados.</p>';
-    } else {
-        listaJugadores.forEach(j => {
-            // Se muestra el ID como "Número de Torneo"
-            html += `
-                <div class="jugador-item">
-                    <span>${j.id}. <b>${j.nombre}</b></span>
-                    <button class="rojo" onclick="eliminarJugador(${j.id})">X</button>
-                </div>
-            `;
-        });
-    }
-
-    listaOutput.innerHTML = html;
-    document.getElementById("numJugadoresDisplay").textContent = listaJugadores.length;
-}
-
-/**
- * Inicia el proceso de sorteo usando la lista de jugadores registrados.
- */
-function iniciarSorteos() {
-    const N = listaJugadores.length;
-    if (N < 8) {
-        alert(`Se necesitan al menos 8 jugadores para iniciar el torneo. Actualmente hay ${N}.`);
-        return;
-    }
-    generarRondas(N);
-}
-
-// -------------------------------
-// LÓGICA DEL TORNEO
-// -------------------------------
-
-// TABLA DE DISTRIBUCIÓN (Sin cambios)
-function calcularDistribucion(N) {
-    // [Se mantiene la lógica de cálculo de enfrentamientos, equipos, dupletas y tripletas]
-    let enfrentamientos = 0;
-    if (N < 12) enfrentamientos = 2;
-    else if (N < 16) enfrentamientos = 3;
-    else if (N < 20) enfrentamientos = 4;
-    else if (N < 24) enfrentamientos = 5;
-    else if (N < 28) enfrentamientos = 6;
-    else if (N < 32) enfrentamientos = 7;
-    else if (N < 36) enfrentamientos = 8;
-    else if (N < 40) enfrentamientos = 9;
-    else enfrentamientos = 10;
-
-    const equipos = enfrentamientos * 2;
-    const resto = N - (equipos * 2);
-
-    let tripletas = (resto > 0) ? resto : 0;
-    let dupletas = equipos - tripletas;
-
-    return { enfrentamientos, equipos, dupletas, tripletas };
-}
-
-// CREAR EQUIPOS (MODIFICADA: Ahora usa los nombres de los jugadores)
-function crearEquipos(N) {
-    const { enfrentamientos, equipos, dupletas, tripletas } = calcularDistribucion(N);
-
-    // Array de IDs de jugadores mezclado (usamos solo los IDs para el sorteo)
-    let jugadoresIDs = listaJugadores.map(j => j.id);
-    jugadoresIDs = jugadoresIDs.sort(() => Math.random() - 0.5);
-
-    let resultadoEquipos = [];
-    let idx = 0;
-
-    // Dupletas
-    for (let i = 0; i < dupletas; i++) {
-        const ids = [jugadoresIDs[idx], jugadoresIDs[idx + 1]];
-        resultadoEquipos.push({
-            id: `E${i+1}`,
-            jugadores: ids.map(id => ({ 
-                id: id, 
-                nombre: listaJugadores.find(j => j.id === id).nombre 
-            }))
-        });
-        idx += 2;
-    }
-
-    // Tripletas
-    for (let i = 0; i < tripletas; i++) {
-        const ids = [jugadoresIDs[idx], jugadoresIDs[idx + 1], jugadoresIDs[idx + 2]];
-        resultadoEquipos.push({
-            id: `E${dupletas + i + 1}`,
-            jugadores: ids.map(id => ({ 
-                id: id, 
-                nombre: listaJugadores.find(j => j.id === id).nombre 
-            }))
-        });
-        idx += 3;
-    }
-    
-    // Asignar enfrentamientos
-    let listaEnfrentamientos = [];
-    for(let i = 0; i < resultadoEquipos.length / 2; i++) {
-        listaEnfrentamientos.push({
-            equipoA: resultadoEquipos[i * 2],
-            equipoB: resultadoEquipos[i * 2 + 1],
-            puntuacionA: 0,
-            puntuacionB: 0
-        });
-    }
-
-    return listaEnfrentamientos;
-}
-
-// GENERAR 3 SORTEOS Y TABLAS (MODIFICADA: Ahora recibe N)
-function generarRondas(N) {
-    let html = `<h2>2. Resultados y Sorteos</h2>`;
-    enfrentamientosGenerados = []; // Reiniciar la lista de enfrentamientos
-
-    for (let ronda = 1; ronda <= 3; ronda++) {
-        const enfrentamientos = crearEquipos(N);
-        enfrentamientosGenerados.push({ ronda, enfrentamientos });
-
-        html += `<h3>Ronda ${ronda}</h3>`;
-        html += generarTablaEnfrentamientos(ronda, enfrentamientos);
-    }
-
-    document.getElementById("resultado").innerHTML = html;
-    document.getElementById("resultado").style.display = 'block'; 
-    document.getElementById("ranking-container").style.display = 'block'; 
-}
-
-
-// CREACIÓN DE LA TABLA HTML (MODIFICADA: Muestra el ID y el Nombre)
-function generarTablaEnfrentamientos(ronda, enfrentamientos) {
-    let tabla = `<table class="tabla-enfrentamientos">
-        <tr>
-            <th>Equipo A (IDs/Nombres)</th>
-            <th>Puntos A</th>
-            <th>Puntos B</th>
-            <th>Equipo B (IDs/Nombres)</th>
-        </tr>`;
-
-    enfrentamientos.forEach((enf, i) => {
-        // Formato para mostrar: ID. Nombre
-        const equipoA_str = enf.equipoA.jugadores.map(j => `${j.id}. ${j.nombre}`).join(" - ");
-        const equipoB_str = enf.equipoB.jugadores.map(j => `${j.id}. ${j.nombre}`).join(" - ");
-        
-        tabla += `<tr class="enfrentamiento-row">
-            <td style="text-align:left;">${equipoA_str}</td>
-            <td>
-                <input type="number" id="scoreA_${ronda}_${i}" value="0" min="0" max="15" onchange="actualizarResultado(${ronda}, ${i}, 'A', this.value)">
-            </td>
-            <td>
-                <input type="number" id="scoreB_${ronda}_${i}" value="0" min="0" max="15" onchange="actualizarResultado(${ronda}, ${i}, 'B', this.value)">
-            </td>
-            <td style="text-align:left;">${equipoB_str}</td>
-        </tr>`;
-    });
-
-    tabla += `</table>`;
-    return tabla;
-}
-
-// ACTUALIZAR RESULTADO EN LA ESTRUCTURA DE DATOS (Sin cambios)
-function actualizarResultado(ronda, indiceEnfrentamiento, lado, valor) {
-    const rIndex = ronda - 1;
-    enfrentamientosGenerados[rIndex].enfrentamientos[indiceEnfrentamiento][lado === 'A' ? 'puntuacionA' : 'puntuacionB'] = parseInt(valor) || 0;
-}
-
-
-// CALCULAR EL RANKING (ACTUALIZADA: Ahora usa el nombre del jugador para mostrar)
-function calcularRanking() {
-    const N = listaJugadores.length;
-    let ranking = {};
-    
-    // Inicializar ranking por ID
-    listaJugadores.forEach(j => {
-        ranking[j.id] = {
-            id: j.id,
-            nombre: j.nombre,
-            victorias: 0,
-            derrotas: 0,
-            puntosFavor: 0,   
-            puntosContra: 0,  
-            average: 0         
-        };
-    });
-
-    // 2. Recorrer todos los enfrentamientos para actualizar las estadísticas
-    enfrentamientosGenerados.forEach(rondaData => {
-        rondaData.enfrentamientos.forEach(enf => {
-            const pA = enf.puntuacionA;
-            const pB = enf.puntuacionB;
-
-            let esVictoriaA = pA > pB;
-            let esVictoriaB = pB > pA;
-            
-            // Asignar estadísticas a los jugadores del equipo A
-            enf.equipoA.jugadores.forEach(j => {
-                const id = j.id;
-                if (esVictoriaA) ranking[id].victorias++;
-                else if (esVictoriaB) ranking[id].derrotas++;
-                
-                ranking[id].puntosFavor += pA;
-                ranking[id].puntosContra += pB;
-                ranking[id].average += pA - pB;
-            });
-            
-            // Asignar estadísticas a los jugadores del equipo B
-            enf.equipoB.jugadores.forEach(j => {
-                const id = j.id;
-                if (esVictoriaB) ranking[id].victorias++;
-                else if (esVictoriaA) ranking[id].derrotas++;
-                
-                ranking[id].puntosFavor += pB;
-                ranking[id].puntosContra += pA;
-                ranking[id].average += pB - pA;
-            });
-
-        });
-    });
-
-    // 3. Convertir a array y ordenar el ranking según el patrón
-    let rankingFinal = Object.values(ranking);
-    
-    rankingFinal.sort((a, b) => {
-        // Prioridad 1: Número de partidas ganadas (3 > 2 > 1 > 0)
-        if (b.victorias !== a.victorias) return b.victorias - a.victorias; 
-
-        // Prioridad 2: Average (Diferencia de Puntos)
-        if (b.average !== a.average) return b.average - a.average; 
-
-        // Prioridad 3: Bolas a favor (Mayor cantidad de puntos anotados)
-        return b.puntosFavor - a.puntosFavor; 
-    });
-
-    // 4. Mostrar el ranking
-    mostrarRanking(rankingFinal);
-}
-
-// MOSTRAR TABLA DE RANKING (ACTUALIZADA: Muestra ID y Nombre)
-function mostrarRanking(ranking) {
-    let tabla = `
-        <table class="tabla-enfrentamientos">
-            <tr>
-                <th>Posición</th>
-                <th>ID</th>
-                <th>Nombre del Jugador</th>
-                <th>Victorias</th>
-                <th>Derrotas</th>
-                <th>Puntos Favor</th>
-                <th>Puntos Contra</th>
-                <th>Average (Dif.)</th>
-            </tr>`;
-
-    ranking.forEach((j, i) => {
-        tabla += `<tr>
-            <td>${i + 1}</td>
-            <td>${j.id}</td>
-            <td style="text-align:left; font-weight: bold;">${j.nombre}</td>
-            <td>${j.victorias}</td>
-            <td>${j.derrotas}</td>
-            <td>${j.puntosFavor}</td>
-            <td>${j.puntosContra}</td>
-            <td>${j.average}</td>
-        </tr>`;
-    });
-
-    tabla += `</table>`;
-    document.getElementById("ranking-output").innerHTML = tabla;
-}
-
-// Inicializar la lista al cargar la página
-window.onload = actualizarListaJugadores; 
-</script>
-
+<!-- Script -->
+<script src="script.js"></script>
 </body>
-
 </html>
