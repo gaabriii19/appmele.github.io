@@ -1,102 +1,97 @@
-:root{
-  --primary: #d2cc99; /* color elegido */
-  --dark: #1f2b20;
-  --accent: #8a1f1f; /* ligero borgoña */
-  --bg: #f6f5ee;
-  --card: #ffffff;
-  --muted: #6b6b6b;
-  --radius: 10px;
-  font-family: 'Montserrat', Arial, sans-serif;
+:root {
+  --primary: #d2cc99; --dark: #1f2b20; --bg: #f0f2eb; --card: #ffffff;
+  --muted: #6b6b6b; --radius: 12px; --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  --winner: #27ae60; --loser: #e74c3c;
+  font-family: 'Montserrat', sans-serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background-color: var(--bg); color: var(--dark); line-height: 1.6; }
+
+.app-header { display: flex; gap: 20px; align-items: center; padding: 20px 30px; background: var(--primary); border-bottom: 5px solid var(--dark); }
+.app-header .escudo { width: 60px; height: 60px; border-radius: 10px; }
+.app-header h1 { margin: 0; font-size: 1.2rem; text-transform: uppercase; }
+
+.container { max-width: 950px; margin: 30px auto; padding: 0 15px; }
+.card { background: var(--card); padding: 25px; border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 25px; border-left: 5px solid var(--primary); }
+h2 { margin-top: 0; font-size: 1.1rem; color: var(--dark); text-transform: uppercase; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+
+.row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+input, select { padding: 12px; border-radius: 8px; border: 2px solid #e1e1d6; outline: none; flex: 1; font-family: inherit; }
+
+button { cursor: pointer; border: 0; padding: 12px 20px; border-radius: 8px; font-weight: 700; text-transform: uppercase; font-size: 11px; transition: 0.2s; }
+button.primary { background: var(--dark); color: white; }
+button.sec { background: #eee; }
+
+.lista { margin-top: 15px; display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
+.jugador { display: flex; justify-content: space-between; padding: 10px; background: #f9f9f7; border-radius: 8px; border: 1px solid #eee; align-items: center; }
+.dorsal { background: var(--dark); color: var(--primary); width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 10px; font-weight: 800; margin-right: 8px; }
+
+.equipoBox { background: #fff; border: 1px solid #eee; padding: 15px; margin-bottom: 12px; border-radius: 10px; }
+.equipo-nombres { font-weight: 600; font-size: 13.5px; flex: 2; transition: color 0.3s ease; }
+.winner { color: var(--winner) !important; font-weight: 800 !important; }
+.loser { color: var(--loser) !important; font-weight: 800 !important; }
+
+/* Cápsula de score con centrado total */
+.capsula-score { display: flex; background: #f0f0f0; padding: 5px 12px; border-radius: 50px; gap: 8px; align-items: center; border: 1px solid #ddd; }
+.capsula-score input {
+  width: 45px !important;
+  height: 35px;
+  text-align: center;
+  padding: 0 !important; /* IMPORTANTE PARA EL CENTRADO */
+  font-weight: 800;
+  border: 1px solid #ccc;
+  border-radius: 20px;
+  flex: none;
+  background: white;
+}
+/* Quitar flechas de los inputs numéricos */
+input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+.pistaLabel { background: var(--dark); color: var(--primary); padding: 4px 12px; border-radius: 20px; font-size: 10px; margin-left: 10px; font-weight: 700; }
+
+.tabla-container { overflow-x: auto; border-radius: 8px; margin-top: 15px; }
+.tabla { width: 100%; border-collapse: collapse; background: white; min-width: 600px; }
+.tabla th { background: var(--dark); color: white; padding: 12px; font-size: 11px; }
+.tabla td { padding: 12px; border-bottom: 1px solid #eee; text-align: center; }
+
+.mt { margin-top: 20px; }
+.muted { color: var(--muted); font-size: 12px; }
+.app-footer {
+    margin-top: 50px;
+    padding: 30px 10px;
+    text-align: center;
+    border-top: 1px solid #e1e1d6;
+    color: var(--muted);
 }
 
-*{box-sizing:border-box}
-body{
-  margin:0;
-  background: linear-gradient(180deg,#f8f7f0 0%, #eef0e6 100%);
-  color:var(--dark);
-  -webkit-font-smoothing:antialiased;
-  -moz-osx-font-smoothing:grayscale;
+.footer-logo {
+    width: 40px;
+    height: 40px;
+    opacity: 0.6; /* Un poco transparente para que no distraiga */
+    margin-bottom: 10px;
+    filter: grayscale(100%); /* Opcional: logo en blanco y negro para estilo sobrio */
+    transition: 0.3s;
 }
 
-.app-header{
-  display:flex;
-  gap:16px;
-  align-items:center;
-  padding:16px 24px;
-  background:linear-gradient(90deg,var(--primary), #cfc69a);
-  border-bottom:4px solid rgba(0,0,0,0.06);
+.app-footer:hover .footer-logo {
+    opacity: 1;
+    filter: grayscale(0%);
 }
 
-.app-header .escudo{
-  width:78px;
-  height:78px;
-  object-fit:contain;
-  border-radius:8px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+.app-footer p {
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    margin: 0;
 }
 
-.app-header h1{margin:0;font-size:20px;font-weight:700}
-.subtitle{margin:0;font-size:12px;color:var(--dark);opacity:0.9}
-
-.container{
-  max-width:980px;
-  margin:20px auto;
-  padding:12px;
+.app-footer strong {
+    color: var(--dark);
 }
 
-.card{
-  background:var(--card);
-  padding:16px;
-  border-radius:var(--radius);
-  box-shadow: 0 8px 24px rgba(15,20,10,0.06);
-  margin-bottom:16px;
-}
-
-.row{display:flex;gap:10px;align-items:center}
-.row.small{font-size:13px}
-.mt{margin-top:12px}
-input[type="text"], input[type="number"], input{
-  padding:10px 12px;
-  border-radius:8px;
-  border:1px solid #e1e1d6;
-  outline:none;
-  flex:1;
-  font-size:14px;
-}
-button{cursor:pointer;border:0;padding:10px 14px;border-radius:10px;font-weight:600}
-button.primary{background:var(--dark); color:white}
-button.sec{background:#eee;color:var(--dark)}
-button.secundaria{background:#ddd}
-button.rojo{background:#c94e4e;color:white;padding:6px 8px;border-radius:8px}
-
-.lista{margin-top:10px}
-.jugador{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:8px;border-radius:8px;margin-bottom:6px;background:#fbfbf9;border:1px solid #f0f0e9;
-}
-.jugador span{font-weight:600}
-
-.tabla{
-  width:100%;border-collapse:collapse;margin-top:8px;font-size:14px;
-}
-.tabla th, .tabla td{
-  padding:8px;border-bottom:1px solid #f0f0e9;text-align:center;
-}
-.equipoBox{
-  background:linear-gradient(180deg, #ffffff, #fafaf6);
-  border-radius:8px;padding:8px;margin-bottom:8px;border:1px solid #eee;
-}
-.pistaLabel{
-  display:inline-block;padding:6px 10px;border-radius:999px;background:var(--primary);color:var(--dark);font-weight:700;margin-left:8px;
-}
-
-.muted{color:var(--muted);font-size:13px}
-.small{font-size:13px}
-.center{text-align:center}
-
-/* Responsive */
-@media (max-width:700px){
-  .row{flex-direction:column;align-items:stretch}
-  .app-header h1{font-size:16px}
-  .app-header .escudo{width:64px;height:64px}
+/* Ajuste para móviles */
+@media (max-width: 600px) {
+    .app-footer p {
+        font-size: 10px;
+        line-height: 1.5;
+    }
 }
