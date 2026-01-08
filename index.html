@@ -1,61 +1,81 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Torneo Petanca - Club Torredonjimeno</title>
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<link rel="icon" type="image/png" href="ESCUDO CP TORREDONJIMENO OK.png">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Gestor Torneos | Club Deportivo la Petanca Torredonjimeno</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header class="app-header">
-  <img src="ESCUDO CP TORREDONJIMENO OK.png" alt="Escudo" class="escudo">
-  <div>
-    <h1>Club Deportivo Petanca Torredonjimeno</h1>
-    <p class="subtitle">App para cuadrante de Torneo (Estilo MELÉ) — Creada por Gabriel Santiago López ©</p>
-  </div>
-</header>
+    <header class="app-header">
+        <img src="ESCUDO CP TORREDONJIMENO OK.png" alt="Escudo" class="escudo">
+        <div>
+            <h1>Gestor Torneos | Club Deportivo la Petanca Torredonjimeno</h1>
+            <p class="subtitle">App con cuadrantes Estilo MELÉ | Creado por Gabriel Santiago López ©</p>
+        </div>
+    </header>
 
-<main class="container">
-  <section class="card">
-    <h2>1. Registro de jugadores</h2>
-    <div class="row">
-      <input id="nombreJugador" placeholder="Nombre del jugador/ra" />
-      <button id="btnAdd" class="primary">Añadir</button>
-    </div>
-    <p class="muted">Mínimo 8 jugadores. Máximo 60. <span id="playerCount"></span></p>
-    <div id="listaJugadores" class="lista"></div>
-    <div class="row mt" id="mainActions">
-      <button id="btnStart" class="primary">Iniciar Sorteos</button>
-      <button id="btnClear" class="sec">Limpiar todo</button>
-    </div>
-    <div class="options-grid mt small">
-      <label><input id="optAvoidRepeat" type="checkbox" checked/> Evitar repetir compañeros</label>
-      <label><input id="optAssignPistas" type="checkbox" checked/> Control visual de pistas</label>
-      <label title="Las parejas se forman en la Ronda 1 y no cambian"><input id="optFixedTeams" type="checkbox"/> Parejas fijas todo el torneo</label>
-    </div>
-  </section>
+    <main class="container">
+        <section class="card" id="modeSelectorCard">
+            <h2>Elegir Modalidad de Juego</h2>
+            <div class="mode-grid">
+                <button onclick="setMode('mele')" id="btnMele" class="mode-btn">
+                    <strong>MELÉ a JUGADOR@S a SORTEO</strong><br>Dupletas o Tripletas
+                </button>
+                <button onclick="setMode('montadas')" id="btnMontadas" class="mode-btn">
+                    <strong>MELÉ a EQUIPOS MONTADOS</strong><br>Solo Dupletas
+                </button>
+            </div>
+        </section>
 
-  <section id="sorteosCard" class="card" style="display:none;">
-    <h2>2. Sorteos y resultados</h2>
-    <div id="rondasContainer"></div>
-    <div class="row mt">
-      <button id="btnSaveResults" class="primary">Guardar resultados</button>
+        <section id="mainCard" class="card" style="display:none;">
+            <h2 id="titleRegistro">1. Registro</h2>
+            <div class="row">
+                <input id="inputNombre" type="text" placeholder="..." />
+                <button id="btnAdd" class="primary">Añadir</button>
+            </div>
+			<div class="info-registro mt">
+        <p class="count-main"><span id="countText"></span></p>
+        <p class="muted" id="limitsText">Mínimo 8 jugadores — Máximo 60</p>
     </div>
-  </section>
+            <p class="muted"><span id="countText"></span></p>
+            <div id="listaEntradas" class="lista"></div>
 
-  <section id="rankingCard" class="card" style="display:none;">
-    <h2>3. Clasificación y Ranking</h2>
-    <div id="rankingOutput" class="mt" style="overflow-x:auto;"></div>
-  </section>
-  <footer class="app-footer">
+            <div class="options-grid">
+				<h5>Opciónes de competición:</h5>
+                <label id="labelAvoid"><input id="optAvoidRepeat" type="checkbox" checked/> Evitar repetir compañeros</label>
+                <label id="labelFixed"><input id="optFixedTeams" type="checkbox"/> Parejas fijas todo el torneo</label>
+                <label><input id="optAssignPistas" type="checkbox" checked/> Control de pistas</label>
+            </div>
+
+            <div class="row mt" id="mainActions">
+                <button id="btnStart" class="primary">Generar Torneo</button>
+                <button id="btnBack" class="sec">Cambiar Modo</button>
+                <button id="btnClear" class="sec" style="color:red">Borrar Todo</button>
+            </div>
+        </section>
+
+        <section id="sorteosCard" class="card" style="display:none;">
+            <h2>2. Enfrentamientos y Resultados</h2>
+            <div id="rondasContainer"></div>
+            <div class="row mt">
+                <button id="btnSaveResults" class="primary">Confirmar Puntuaciones</button>
+            </div>
+        </section>
+
+        <section id="rankingCard" class="card" style="display:none;">
+            <h2>3. Clasificación Final</h2>
+            <div id="rankingOutput" class="mt"></div>
+        </section>
+
+        <footer class="app-footer">
             <img src="ESCUDO CP TORREDONJIMENO OK.png" alt="Logo Club" class="footer-logo">
-            <p>© App creada por Gabriel Santiago López, para el Club Deportivo la Petanca Torredonjimeno</p>
+            <p>App creada por Gabriel Santiago López ©, para el Club Deportivo la Petanca Torredonjimeno</p>
+			<p>2026</p>
         </footer>
-</main>
-<script src="script.js"></script>
+    </main>
+
+    <script src="script.js"></script>
 </body>
 </html>
