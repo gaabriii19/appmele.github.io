@@ -1,751 +1,162 @@
-// script.js - Torneo Petanca (Club Torredonjimeno)
-// Añadido: validación import JSON, export CSV, backups automáticos con UI (ver/restore/delete), selector 3/4/5 rondas
-const LS_KEY = "petanca_torneo_v1";
-const BACKUPS_KEY = LS_KEY + "_backups";
+const LS_KEY = "petanca_v3_final";
+let state = { players: [], rounds: [], settings: { rounds: 3 } };
 
-let state = {
-  players: [],           // {id, name}
-  rounds: [],            // [ {ronda:1, matches:[{equipoA,equipoB, scoreA, scoreB, pista}]}, ... ]
-  historyPairs: {},      // "id-id" -> times been teammates
-  historyFaced: {},      // "teamStr-teamStr" -> times faced
-  settings: {
-    roundsToGenerate: 3
-  }
+const get = (id) => document.getElementById(id);
+const save = () => localStorage.setItem(LS_KEY, JSON.stringify(state));
+
+function init() {
+    const raw = localStorage.getItem(LS_KEY);
+    if (raw) state = JSON.parse(raw);
+    renderPlayers();
+    if (state.rounds.length > 0) renderRounds();
+}
+
+const getFormattedName = (index) => `${index + 1}. ${state.players[index].name}`;
+
+function addPlayer() {
+    const input = get("nombreJugador");
+    const name = input.value.trim();
+    if (!name) return;
+    state.players.push({ name });
+    input.value = "";
+    save(); renderPlayers();
+}
+
+window.removePlayer = (index) => {
+    state.players.splice(index, 1);
+    save(); renderPlayers();
 };
 
-const DOM = {
-  nombre: document.getElementById("nombreJugador"),
-  btnAdd: document.getElementById("btnAdd"),
-  listaJugadores: document.getElementById("listaJugadores"),
-  btnStart: document.getElementById("btnStart"),
-  btnClear: document.getElementById("btnClear"),
-  sorteosCard: document.getElementById("sorteosCard"),
-  rondasContainer: document.getElementById("rondasContainer"),
-  rankingCard: document.getElementById("rankingCard"),
-  rankingOutput: document.getElementById("rankingOutput"),
-  btnCalcRanking: document.getElementById("btnCalcRanking"),
-  btnWhats: document.getElementById("btnWhats"),
-  btnPDF: document.getElementById("btnPDF"),
-  btnSaveResults: document.getElementById("btnSaveResults"),
-  btnKiosk: document.getElementById("btnKiosk"),
-  optAvoidRepeat: document.getElementById("optAvoidRepeat"),
-  optAssignPistas: document.getElementById("optAssignPistas"),
-};
-
-const uid = () => Math.random().toString(36).slice(2, 9);
-
-// --- Storage helpers ---
-function saveState(){
-  localStorage.setItem(LS_KEY, JSON.stringify(state));
-}
-function loadState(){
-  const raw = localStorage.getItem(LS_KEY);
-  if(raw){
-    try{
-      const parsed = JSON.parse(raw);
-      // merge carefully
-      state = Object.assign(state, parsed);
-      if(!state.players) state.players = [];
-      if(!state.rounds) state.rounds = [];
-      if(!state.historyPairs) state.historyPairs = {};
-      if(!state.historyFaced) state.historyFaced = {};
-      if(!state.settings) state.settings = { roundsToGenerate: 3 };
-    }catch(e){
-      console.error("Error parsing state:", e);
-    }
-  }
-}
-function resetState(){
-  state = { players: [], rounds: [], historyPairs: {}, historyFaced: {}, settings: { roundsToGenerate: 3 } };
-  saveState();
-  renderPlayers();
-  DOM.sorteosCard.style.display='none';
-  DOM.rondasContainer.innerHTML='';
-  DOM.rankingCard.style.display='none';
-  renderBackupsUI();
-}
-
-// --- Backups management ---
-function loadBackups(){
-  try{
-    const raw = localStorage.getItem(BACKUPS_KEY);
-    return raw ? JSON.parse(raw) : [];
-  }catch(e){ return []; }
-}
-function saveBackups(list){
-  localStorage.setItem(BACKUPS_KEY, JSON.stringify(list));
-}
-function saveBackup(label){
-  // Save snapshot of current state with timestamp and label
-  const list = loadBackups();
-  const ts = new Date().toISOString();
-  const item = { id: uid(), ts, label: label || `Export ${ts}`, state: state };
-  list.unshift(item); // newest first
-  // keep up to 50 backups to avoid huge storage
-  saveBackups(list.slice(0, 50));
-  renderBackupsUI();
-}
-function renderBackupsUI(){
-  // create / update a backups panel inside sorteosCard
-  if(!DOM.sorteosCard) return;
-  // if container exists, remove to re-create
-  const existing = document.getElementById("backupsPanel");
-  if(existing) existing.remove();
-
-  const panel = document.createElement("div");
-  panel.id = "backupsPanel";
-  panel.className = "card";
-  const backups = loadBackups();
-  panel.innerHTML = `<h3>Copias de seguridad (${backups.length})</h3>`;
-  if(backups.length === 0){
-    panel.innerHTML += `<p class="muted">No hay copias guardadas.</p>`;
-  } else {
-    const list = document.createElement("div");
-    backups.forEach(b=>{
-      const row = document.createElement("div");
-      row.style.display="flex"; row.style.justifyContent="space-between"; row.style.alignItems="center"; row.style.gap="8px";
-      row.style.marginBottom="8px";
-      const left = document.createElement("div");
-      left.innerHTML = `<strong>${new Date(b.ts).toLocaleString()}</strong><div class="muted" style="font-size:13px">${b.label}</div>`;
-      const controls = document.createElement("div");
-      const btnRestore = document.createElement("button");
-      btnRestore.textContent = "Restaurar";
-      btnRestore.className = "sec";
-      btnRestore.style.marginRight="6px";
-      btnRestore.onclick = ()=> {
-        if(confirm("Restaurar esta copia de seguridad y reemplazar el estado actual?")) {
-          state = b.state;
-          saveState();
-          renderPlayers();
-          if(state.rounds && state.rounds.length>0){
-            DOM.sorteosCard.style.display='block';
-            renderRounds();
-            DOM.rankingCard.style.display='block';
-          }
-          alert("Copia restaurada.");
-        }
-      };
-      const btnDelete = document.createElement("button");
-      btnDelete.textContent = "Eliminar";
-      btnDelete.className = "rojo";
-      btnDelete.onclick = ()=>{
-        if(!confirm("Eliminar esta copia de seguridad?")) return;
-        const newList = loadBackups().filter(x => x.id !== b.id);
-        saveBackups(newList);
-        renderBackupsUI();
-      };
-      controls.appendChild(btnRestore);
-      controls.appendChild(btnDelete);
-      row.appendChild(left);
-      row.appendChild(controls);
-      list.appendChild(row);
-    });
-    panel.appendChild(list);
-  }
-  // append after the export/import UI if present, otherwise before rondasContainer
-  const importUI = document.getElementById("exportImportUI");
-  if(importUI) DOM.sorteosCard.insertBefore(panel, importUI.nextSibling);
-  else DOM.sorteosCard.insertBefore(panel, DOM.rondasContainer);
-}
-
-// --- Players management ---
-function addPlayer(){
-  const name = (DOM.nombre.value || "").trim();
-  if(!name){ alert("Introduce un nombre"); return; }
-  const id = state.players.length + 1;
-  state.players.push({ id, name });
-  DOM.nombre.value = "";
-  saveState();
-  renderPlayers();
-}
-function removePlayer(id){
-  state.players = state.players.filter(p => p.id !== id).map((p,i)=>({id:i+1,name:p.name}));
-  saveState();
-  renderPlayers();
-}
-function renderPlayers(){
-  const out = state.players.map(p => `
-    <div class="jugador">
-      <span>${p.id}. ${p.name}</span>
-      <div>
-        <button class="rojo" onclick="removePlayer(${p.id})">Eliminar</button>
-      </div>
-    </div>
-  `).join("");
-  DOM.listaJugadores.innerHTML = out || '<p class="muted">Aún no hay jugadores registrados.</p>';
-}
-
-// --- Distribution logic ---
-function calcEnfrentamientos(N){
-  if(N < 12) return 2;
-  if(N < 16) return 3;
-  if(N < 20) return 4;
-  if(N < 24) return 5;
-  if(N < 28) return 6;
-  if(N < 32) return 7;
-  if(N < 36) return 8;
-  if(N < 40) return 9;
-  return 10;
-}
-function calcStructure(N){
-  const enf = calcEnfrentamientos(N);
-  const equipos = enf * 2;
-  let tripletas = 0;
-  const maxDuplePlayers = equipos * 2;
-  tripletas = Math.max(0, N - maxDuplePlayers);
-  if(N > 40) tripletas = N - 40;
-  const dupletas = equipos - tripletas;
-  return { enfrentamientos: enf, equipos, dupletas, tripletas };
-}
-
-// --- Teams / Matches helpers ---
-function buildTeamsFromShuffle(shuffledIds, dupletas, tripletas){
-  const teams = [];
-  let idx = 0;
-  // dupletas first (priority)
-  for(let i=0;i<dupletas;i++){
-    const a = shuffledIds[idx++], b = shuffledIds[idx++];
-    teams.push({ id: uid(), members: [a,b] });
-  }
-  for(let i=0;i<tripletas;i++){
-    const a = shuffledIds[idx++], b = shuffledIds[idx++], c = shuffledIds[idx++];
-    teams.push({ id: uid(), members: [a,b,c] });
-  }
-  return teams;
-}
-function teamStr(team){
-  return team.members.slice().sort((a,b)=>a-b).join("-");
-}
-function canUseTeams(teams){
-  if(!DOM.optAvoidRepeat.checked) return true;
-  for(const t of teams){
-    for(let i=0;i<t.members.length;i++){
-      for(let j=i+1;j<t.members.length;j++){
-        const key = [t.members[i], t.members[j]].sort((a,b)=>a-b).join("-");
-        if((state.historyPairs[key]||0) > 0) return false;
-      }
-    }
-  }
-  return true;
-}
-function canUseMatches(matches){
-  if(!DOM.optAvoidRepeat.checked) return true;
-  for(const m of matches){
-    const a=teamStr(m.equipoA), b=teamStr(m.equipoB);
-    const key = [a,b].sort().join("_");
-    if((state.historyFaced[key]||0) > 0) return false;
-  }
-  return true;
-}
-function pairTeams(teams){
-  const matches = [];
-  const copy = teams.slice();
-  // shuffle teams
-  for(let i=copy.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [copy[i],copy[j]]=[copy[j],copy[i]];}
-  for(let i=0;i<copy.length;i+=2){
-    matches.push({
-      equipoA: copy[i],
-      equipoB: copy[i+1],
-      scoreA: 0, scoreB: 0,
-      pista: (i/2)+1
-    });
-  }
-  return matches;
-}
-
-// --- Rounds generation (variable rounds) ---
-function generateRounds(){
-  const N = state.players.length;
-  if(N < 8){ alert("Se necesitan al menos 8 jugadores."); return; }
-  const structure = calcStructure(N);
-  const { dupletas, tripletas } = structure;
-  const numRounds = parseInt(state.settings.roundsToGenerate || 3, 10) || 3;
-
-  state.rounds = [];
-  const ids = state.players.map(p=>p.id);
-
-  for(let r=1; r<=numRounds; r++){
-    let attempts=0;
-    let ok=false;
-    let matches=[];
-    while(!ok && attempts < 500){
-      attempts++;
-      // shuffle ids
-      const s = ids.slice();
-      for(let i=s.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [s[i],s[j]]=[s[j],s[i]]; }
-      const teams = buildTeamsFromShuffle(s, dupletas, tripletas);
-      const flattened = teams.flatMap(t=>t.members);
-      if(flattened.length !== N) { continue; }
-      if(!canUseTeams(teams)) continue;
-      const ms = pairTeams(teams);
-      if(!canUseMatches(ms)) continue;
-      matches = ms;
-      ok=true;
-    }
-    if(!ok){
-      // relax constraints
-      const s = ids.slice();
-      for(let i=s.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [s[i],s[j]]=[s[j],s[i]]; }
-      const teams = buildTeamsFromShuffle(s, dupletas, tripletas);
-      matches = pairTeams(teams);
-    }
-
-    // register histories
-    for(const t of matches.flatMap(m=>[m.equipoA,m.equipoB])){
-      for(let i=0;i<t.members.length;i++){
-        for(let j=i+1;j<t.members.length;j++){
-          const key=[t.members[i],t.members[j]].sort((a,b)=>a-b).join("-");
-          state.historyPairs[key] = (state.historyPairs[key]||0) + 1;
-        }
-      }
-    }
-    for(const m of matches){
-      const a=teamStr(m.equipoA), b=teamStr(m.equipoB), key=[a,b].sort().join("_");
-      state.historyFaced[key] = (state.historyFaced[key]||0) + 1;
-    }
-
-    state.rounds.push({ ronda: r, matches });
-  }
-
-  saveState();
-  renderRounds();
-  DOM.sorteosCard.style.display='block';
-  DOM.rankingCard.style.display='block';
-  renderBackupsUI(); // keep backups visible updated
-}
-
-// --- Render rounds ---
-function renderRounds(){
-  const container = DOM.rondasContainer;
-  container.innerHTML = "";
-  state.rounds.forEach(rData=>{
-    const div = document.createElement("div");
-    div.className = "card";
-    div.innerHTML = `<h3>Ronda ${rData.ronda} — (${rData.matches.length} enfrentamientos)</h3>`;
-    rData.matches.forEach((m, idx)=>{
-      const teamA = m.equipoA.members.map(id=>playerNameById(id)).join(" - ");
-      const teamB = m.equipoB.members.map(id=>playerNameById(id)).join(" - ");
-      const pistaSpan = DOM.optAssignPistas.checked ? `<span class="pistaLabel">Pista ${m.pista}</span>` : "";
-      const row = document.createElement("div");
-      row.className = "equipoBox";
-      row.innerHTML = `
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-          <div style="flex:1;min-width:200px"><strong>A:</strong> ${teamA}</div>
-          <div>
-            <input type="number" min="0" value="${m.scoreA||0}" id="score_${rData.ronda}_${idx}_A" style="width:70px;padding:6px;border-radius:6px;border:1px solid #ddd;">
-          </div>
-          <div style="font-weight:700"> - </div>
-          <div>
-            <input type="number" min="0" value="${m.scoreB||0}" id="score_${rData.ronda}_${idx}_B" style="width:70px;padding:6px;border-radius:6px;border:1px solid #ddd;">
-          </div>
-          <div style="flex:1;min-width:200px;text-align:right"><strong>B:</strong> ${teamB} ${pistaSpan}</div>
+function renderPlayers() {
+    get("listaJugadores").innerHTML = state.players.map((p, i) => `
+        <div class="jugador">
+            <div style="display:flex; align-items:center;">
+                <div class="dorsal">${i + 1}</div>
+                <span style="font-weight:600;">${p.name}</span>
+            </div>
+            <button onclick="removePlayer(${i})" style="color:red; background:none; font-size:18px;">×</button>
         </div>
-      `;
-      div.appendChild(row);
-    });
-    container.appendChild(div);
-  });
+    `).join("");
+    get("playerCount").innerText = `(Total: ${state.players.length})`;
 }
 
-// --- Helpers ---
-function playerNameById(id){
-  const p = state.players.find(x=>x.id===id);
-  return p ? p.name : `J${id}`;
-}
-function readScoresIntoState(){
-  state.rounds.forEach(rData=>{
-    rData.matches.forEach((m, idx)=>{
-      const elA = document.getElementById(`score_${rData.ronda}_${idx}_A`);
-      const elB = document.getElementById(`score_${rData.ronda}_${idx}_B`);
-      const a = elA ? parseInt(elA.value) || 0 : 0;
-      const b = elB ? parseInt(elB.value) || 0 : 0;
-      m.scoreA = a; m.scoreB = b;
-    });
-  });
-  saveState();
-}
+window.checkWinner = (r, i) => {
+    const valA = parseInt(get(`s_${r}_${i}_A`).value) || 0;
+    const valB = parseInt(get(`s_${r}_${i}_B`).value) || 0;
+    const labelA = get(`name_${r}_${i}_A`);
+    const labelB = get(`name_${r}_${i}_B`);
 
-// --- Ranking ---
-function calculateRanking(){
-  readScoresIntoState();
-  const stats = {};
-  state.players.forEach(p => {
-    stats[p.id] = { id: p.id, name: p.name, wins: 0, losses:0, bf:0, bc:0, avg:0 };
-  });
+    labelA.classList.remove("winner", "loser");
+    labelB.classList.remove("winner", "loser");
 
-  state.rounds.forEach(r=>{
-    r.matches.forEach(m=>{
-      const a = m.scoreA || 0, b = m.scoreB || 0;
-      m.equipoA.members.forEach(pid=>{
-        stats[pid].bf += a; stats[pid].bc += b; stats[pid].avg += (a - b);
-      });
-      m.equipoB.members.forEach(pid=>{
-        stats[pid].bf += b; stats[pid].bc += a; stats[pid].avg += (b - a);
-      });
-      if(a > b){
-        m.equipoA.members.forEach(pid=> stats[pid].wins++ );
-        m.equipoB.members.forEach(pid=> stats[pid].losses++ );
-      } else if(b > a){
-        m.equipoB.members.forEach(pid=> stats[pid].wins++ );
-        m.equipoA.members.forEach(pid=> stats[pid].losses++ );
-      }
-    });
-  });
+    if (valA === 13) { labelA.classList.add("winner"); labelB.classList.add("loser"); }
+    else if (valB === 13) { labelB.classList.add("winner"); labelA.classList.add("loser"); }
+};
 
-  let arr = Object.values(stats);
-  arr.sort((x,y)=>{
-    if(y.wins !== x.wins) return y.wins - x.wins;
-    if(y.avg !== x.avg) return y.avg - x.avg;
-    return y.bf - x.bf;
-  });
+function generate() {
+    const N = state.players.length;
+    if (N < 8) return alert("Mínimo 8 jugadores");
 
-  renderRanking(arr);
-  return arr;
-}
-function renderRanking(arr){
-  const container = DOM.rankingOutput;
-  const rows = arr.map((p,i)=>`
-    <tr>
-      <td>${i+1}</td>
-      <td>${p.id}</td>
-      <td style="text-align:left;font-weight:700">${p.name}</td>
-      <td>${p.wins}</td>
-      <td>${p.losses}</td>
-      <td>${p.bf}</td>
-      <td>${p.bc}</td>
-      <td>${p.avg}</td>
-    </tr>
-  `).join("");
-  container.innerHTML = `
-    <table class="tabla" style="width:100%">
-      <thead>
-        <tr><th>Pos</th><th>ID</th><th>Jugador</th><th>PG</th><th>PP</th><th>PF</th><th>PC</th><th>Avg</th></tr>
-      </thead>
-      <tbody>${rows}</tbody>
-    </table>
-  `;
-}
+    const numRondas = parseInt(get("selRondas").value);
+    const isFixed = get("optFixedTeams").checked;
+    const numEnf = N >= 40 ? 10 : Math.floor(N / 4);
+    const numEquipos = numEnf * 2;
+    const numTripletas = N - (numEquipos * 2);
+    const numDupletas = numEquipos - numTripletas;
 
-// --- Share / PDF / CSV / Export JSON ---
-// Share WhatsApp
-function shareWhatsApp(){
-  const arr = calculateRanking();
-  let text = `Ranking Torneo - Club Petanca Torredonjimeno\n\n`;
-  arr.forEach((p,i)=>{
-    text += `${i+1}. ${p.name} — Vict: ${p.wins} — Avg: ${p.avg} — BF: ${p.bf}\n`;
-  });
-  const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
-  window.open(url, "_blank");
-}
-// Export PDF (keeps backup)
-async function exportPDF(){
-  const printNode = document.createElement("div");
-  printNode.style.padding = "18px";
-  printNode.style.background = "#fff";
-  printNode.innerHTML = `
-    <div style="display:flex;align-items:center;gap:12px">
-      <img src="ESCUDO CP TORREDONJIMENO OK.png" style="width:80px;height:80px;object-fit:contain"/>
-      <div><h2 style="margin:0">Club de Petanca Torredonjimeno</h2><div style="font-size:14px;margin-top:6px">Ranking Torneo</div></div>
-    </div>
-    <hr style="margin:12px 0"/>
-  `;
+    state.rounds = [];
+    let historyMatches = new Set();
+    let fixedTeams = null;
 
-  const arr = calculateRanking();
-  const table = document.createElement("table");
-  table.style.width="100%";
-  table.style.borderCollapse="collapse";
-  let rows = `<tr><th style="border-bottom:1px solid #ddd;padding:6px">Pos</th><th style="padding:6px">Jugador</th><th style="padding:6px">Vict</th><th style="padding:6px">Avg</th><th style="padding:6px">BF</th></tr>`;
-  arr.forEach((p,i)=> rows += `<tr><td style="padding:6px">${i+1}</td><td style="padding:6px">${p.name}</td><td style="padding:6px">${p.wins}</td><td style="padding:6px">${p.avg}</td><td style="padding:6px">${p.bf}</td></tr>`);
-  table.innerHTML = rows;
-  printNode.appendChild(table);
-  document.body.appendChild(printNode);
+    for (let r = 1; r <= numRondas; r++) {
+        let ok = false, attempts = 0, matches = [];
+        while (!ok && attempts < 1500) {
+            attempts++;
+            let indices = state.players.map((_, i) => i).sort(() => Math.random() - 0.5);
+            let teams = (isFixed && fixedTeams) ? JSON.parse(JSON.stringify(fixedTeams)) : [];
 
-  const canvas = await html2canvas(printNode, { scale: 2 });
-  const imgData = canvas.toDataURL('image/png');
-  const { jsPDF } = window.jspdf;
-  const pdf = new jsPDF('p','mm','a4');
-  const imgProps = pdf.getImageProperties(imgData);
-  const pdfWidth = pdf.internal.pageSize.getWidth() - 20;
-  const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-  pdf.addImage(imgData, 'PNG', 10, 10, pdfWidth, pdfHeight);
-  const filename = `ranking_torneo_petanca_${(new Date()).toISOString().slice(0,19).replace(/[:T]/g,'-')}.pdf`;
-  pdf.save(filename);
+            if (!isFixed || r === 1) {
+                let idx = 0;
+                for (let i = 0; i < numDupletas; i++) teams.push({ members: [indices[idx++], indices[idx++]] });
+                for (let i = 0; i < numTripletas; i++) teams.push({ members: [indices[idx++], indices[idx++], indices[idx++]] });
+                if (isFixed && r === 1) fixedTeams = JSON.parse(JSON.stringify(teams));
+            }
 
-  document.body.removeChild(printNode);
-  // backup
-  saveBackup(`PDF export: ${filename}`);
-}
-// Export JSON snapshot (with backup)
-function exportJSON(){
-  const snapshot = JSON.stringify(state, null, 2);
-  const blob = new Blob([snapshot], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  const date = (new Date()).toISOString().slice(0,19).replace(/[:T]/g,'-');
-  a.download = `petanca_torneo_export_${date}.json`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  saveBackup(`JSON export: ${a.download || date}`);
-  alert("Exportado JSON y backup guardado.");
-}
-// Export CSV (ranking) (with backup)
-function exportCSV(){
-  const arr = calculateRanking();
-  // CSV header
-  const header = ["Pos","ID","Jugador","Victorias","Derrotas","BolasFavor","BolasContra","Average"];
-  const lines = [header.join(";")];
-  arr.forEach((p,i)=>{
-    const row = [i+1, p.id, `"${p.name.replace(/\"/g,'\"\"')}"`, p.wins, p.losses, p.bf, p.bc, p.avg];
-    lines.push(row.join(";"));
-  });
-  const csvContent = lines.join("\n");
-  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  const date = (new Date()).toISOString().slice(0,19).replace(/[:T]/g,'-');
-  a.download = `petanca_ranking_${date}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  saveBackup(`CSV export: ${a.download || date}`);
-  alert("CSV exportado y backup guardado.");
-}
+            teams.sort(() => Math.random() - 0.5);
+            let tempMatches = [], matchRepetido = false;
 
-// --- Save / Kiosk ---
-function saveResults(){
-  readScoresIntoState();
-  saveState();
-  alert("Resultados guardados en este navegador (localStorage).");
-}
-async function toggleKiosk(){
-  if(!document.fullscreenElement){
-    await document.documentElement.requestFullscreen();
-    DOM.btnKiosk.textContent = "Salir Kiosko";
-  } else {
-    await document.exitFullscreen();
-    DOM.btnKiosk.textContent = "Modo Kiosko";
-  }
-}
-
-// --- Export / Import UI (create buttons + file input) ---
-function createExportImportUI(){
-  if(document.getElementById("exportImportUI")) return;
-  const div = document.createElement("div");
-  div.id = "exportImportUI";
-  div.style.display = "flex";
-  div.style.gap = "8px";
-  div.style.marginBottom = "12px";
-
-  // Export JSON button
-  const btnExportJSON = document.createElement("button");
-  btnExportJSON.id = "btnExportJSON";
-  btnExportJSON.textContent = "Exportar JSON";
-  btnExportJSON.className = "sec";
-  btnExportJSON.onclick = exportJSON;
-
-  // Export CSV
-  const btnExportCSV = document.createElement("button");
-  btnExportCSV.id = "btnExportCSV";
-  btnExportCSV.textContent = "Exportar CSV";
-  btnExportCSV.className = "sec";
-  btnExportCSV.onclick = exportCSV;
-
-  // Import
-  const btnImport = document.createElement("button");
-  btnImport.id = "btnImportData";
-  btnImport.textContent = "Importar JSON";
-  btnImport.className = "sec";
-
-  const fileInput = document.createElement("input");
-  fileInput.type = "file";
-  fileInput.accept = "application/json";
-  fileInput.style.display = "none";
-  fileInput.id = "importFileInput";
-  fileInput.addEventListener("change", (e)=>{
-    const f = e.target.files[0];
-    if(f) importDataFromFile(f);
-    fileInput.value = "";
-  });
-
-  btnImport.addEventListener("click", ()=> fileInput.click());
-
-  div.appendChild(btnExportJSON);
-  div.appendChild(btnExportCSV);
-  div.appendChild(btnImport);
-  div.appendChild(fileInput);
-
-  DOM.sorteosCard.insertBefore(div, DOM.rondasContainer);
-}
-
-// --- Import with validation ---
-function validateImportedData(parsed){
-  const errors = [];
-  // top-level checks
-  if(!parsed || typeof parsed !== 'object') { errors.push("El JSON no es un objeto válido."); return errors; }
-  if(!Array.isArray(parsed.players) && !Array.isArray(parsed.players || parsed.jugadores)) {
-    errors.push('Falta campo "players" (array de jugadores).');
-  }
-  const players = parsed.players || parsed.jugadores;
-  if(players && (!Array.isArray(players) || players.length < 1)) errors.push('"players" debe ser un array con al menos 1 elemento.');
-
-  // rounds
-  const rounds = parsed.rounds || parsed.rondas;
-  if(!rounds || !Array.isArray(rounds)) errors.push('Falta campo "rounds" (array).');
-  else {
-    rounds.forEach((r, ri)=>{
-      if(!r.matches || !Array.isArray(r.matches)) errors.push(`Ronda ${ri+1}: falta campo "matches" (array).`);
-      else {
-        r.matches.forEach((m, mi)=>{
-          if(!m.equipoA || !m.equipoB) errors.push(`Ronda ${ri+1} partido ${mi+1}: falta equipoA o equipoB.`);
-          else {
-            const aMembers = m.equipoA.members || (m.equipoA.miembros) || null;
-            const bMembers = m.equipoB.members || (m.equipoB.miembros) || null;
-            if(!Array.isArray(aMembers) || aMembers.length<1) errors.push(`Ronda ${ri+1} partido ${mi+1}: equipoA debe tener miembros.`);
-            if(!Array.isArray(bMembers) || bMembers.length<1) errors.push(`Ronda ${ri+1} partido ${mi+1}: equipoB debe tener miembros.`);
-          }
-        });
-      }
-    });
-  }
-
-  // players vs rounds consistency
-  if(players && rounds){
-    const declaredN = players.length;
-    const usedIds = new Set();
-    rounds.forEach(r=>{
-      (r.matches||[]).forEach(m=>{
-        const all = [];
-        if(m.equipoA && Array.isArray(m.equipoA.members)) all.push(...m.equipoA.members);
-        if(m.equipoB && Array.isArray(m.equipoB.members)) all.push(...m.equipoB.members);
-        all.forEach(id => usedIds.add(id));
-      });
-    });
-    // it's ok if not all players appear in rounds (new import) but we check for invalid ids
-    for(const id of usedIds){
-      if(typeof id !== 'number' || id < 1 || id > declaredN) {
-        errors.push(`ID de jugador inválido en rondas: ${id} (debe ser número entre 1 y ${declaredN}).`);
-      }
+            for (let i = 0; i < teams.length; i += 2) {
+                let keyA = teams[i].members.sort((a,b)=>a-b).join("-");
+                let keyB = teams[i+1].members.sort((a,b)=>a-b).join("-");
+                let matchKey = [keyA, keyB].sort().join("VS");
+                if (historyMatches.has(matchKey)) matchRepetido = true;
+                tempMatches.push({ equipoA: teams[i], equipoB: teams[i+1], scoreA: 0, scoreB: 0, pista: (i/2)+1 });
+            }
+            if (!matchRepetido) { matches = tempMatches; ok = true; }
+        }
+        matches.forEach(m => historyMatches.add([m.equipoA.members.sort((a,b)=>a-b).join("-"), m.equipoB.members.sort((a,b)=>a-b).join("-")].sort().join("VS")));
+        state.rounds.push({ ronda: r, matches });
     }
-  }
-
-  return errors;
+    save(); renderRounds();
 }
 
-function importDataFromFile(file){
-  const reader = new FileReader();
-  reader.onload = function(evt){
-    try{
-      const parsed = JSON.parse(evt.target.result);
-      const errors = validateImportedData(parsed);
-      if(errors.length){
-        alert("Error al importar:\n" + errors.join("\n"));
-        return;
-      }
-      // Map alt keys if necessary
-      // Ensure players use {id, name}
-      const players = parsed.players || parsed.jugadores || [];
-      const normalizedPlayers = players.map((p,i)=>({ id: i+1, name: p.name || p.nombre || (`J${i+1}`) }));
-      // rounds: ensure structure matches our internal format
-      const roundsRaw = parsed.rounds || parsed.rondas || [];
-      const normalizedRounds = roundsRaw.map((r,ri)=>{
-        const matches = (r.matches||r.partidos||[]).map(m=>{
-          // expected: m.equipoA { members: [ids] } etc.
-          const ea = m.equipoA || m.a;
-          const eb = m.equipoB || m.b;
-          return {
-            equipoA: { id: uid(), members: ea.members || ea.miembros || [] },
-            equipoB: { id: uid(), members: eb.members || eb.miembros || [] },
-            scoreA: m.scoreA || m.score_a || 0,
-            scoreB: m.scoreB || m.score_b || 0,
-            pista: m.pista || null
-          };
+function renderRounds() {
+    get("sorteosCard").style.display = "block";
+    get("rankingCard").style.display = "block";
+    get("rondasContainer").innerHTML = state.rounds.map(r => `
+        <div class="mt" style="background:var(--dark); color:white; padding:10px 15px; border-radius:8px; font-size:12px;"><strong>RONDA ${r.ronda}</strong></div>
+        ${r.matches.map((m, i) => `
+            <div class="equipoBox">
+                <div class="row" style="justify-content:space-between;">
+                    <div id="name_${r.ronda}_${i}_A" class="equipo-nombres ${m.scoreA === 13 ? 'winner' : (m.scoreB === 13 ? 'loser' : '')}" style="text-align:left;">
+                        ${m.equipoA.members.map(idx => getFormattedName(idx)).join(" / ")}
+                    </div>
+                    <div class="capsula-score">
+                        <input type="number" value="${m.scoreA}" id="s_${r.ronda}_${i}_A" oninput="checkWinner(${r.ronda}, ${i})">
+                        <span style="font-weight:bold; color:#888;">-</span>
+                        <input type="number" value="${m.scoreB}" id="s_${r.ronda}_${i}_B" oninput="checkWinner(${r.ronda}, ${i})">
+                    </div>
+                    <div id="name_${r.ronda}_${i}_B" class="equipo-nombres ${m.scoreB === 13 ? 'winner' : (m.scoreA === 13 ? 'loser' : '')}" style="text-align:right;">
+                        ${m.equipoB.members.map(idx => getFormattedName(idx)).join(" / ")} 
+                        ${get("optAssignPistas").checked ? `<span class="pistaLabel">Pista ${m.pista}</span>`:''}
+                    </div>
+                </div>
+            </div>
+        `).join("")}
+    `).join("");
+}
+
+function rank() {
+    state.rounds.forEach(r => r.matches.forEach((m, i) => {
+        m.scoreA = parseInt(get(`s_${r.ronda}_${i}_A`).value) || 0;
+        m.scoreB = parseInt(get(`s_${r.ronda}_${i}_B`).value) || 0;
+    }));
+    let s = {};
+    state.players.forEach((p, i) => s[i] = { fullName: getFormattedName(i), w: 0, pf: 0, pc: 0, d: 0 });
+    state.rounds.forEach(r => r.matches.forEach(m => {
+        const up = (ids, p, o) => ids.forEach(id => { 
+            if(s[id]) { s[id].pf += p; s[id].pc += o; s[id].d += (p-o); if(p>o) s[id].w++; }
         });
-        return { ronda: r.ronda || ri+1, matches };
-      });
-
-      // Overwrite state but keep settings if present
-      state.players = normalizedPlayers;
-      state.rounds = normalizedRounds;
-      state.historyPairs = parsed.historyPairs || parsed.historialParejas || {};
-      state.historyFaced = parsed.historyFaced || parsed.historialEnfrentamientos || {};
-      state.settings = parsed.settings || state.settings || { roundsToGenerate: 3 };
-      saveState();
-      renderPlayers();
-      if(state.rounds && state.rounds.length>0){
-        DOM.sorteosCard.style.display='block';
-        renderRounds();
-        DOM.rankingCard.style.display='block';
-      }
-      alert("Datos importados correctamente.");
-      saveBackup("Import JSON (manual)");
-    }catch(e){
-      alert("Error al leer el fichero: " + e.message);
-    }
-  };
-  reader.readAsText(file);
+        up(m.equipoA.members, m.scoreA, m.scoreB);
+        up(m.equipoB.members, m.scoreB, m.scoreA);
+    }));
+    const sorted = Object.values(s).sort((a,b) => b.w - a.w || b.d - a.d || b.pf - a.pf);
+    get("rankingOutput").innerHTML = `
+        <div class="row" style="margin-bottom:15px;"><button onclick="rank()" class="primary">Calcular Ranking Final</button></div>
+        <div class="tabla-container"><table class="tabla">
+            <thead><tr><th>Posición</th><th>Jugador</th><th>PG</th><th>PF</th><th>PC</th><th>Dif</th></tr></thead>
+            <tbody>${sorted.map((p,i)=>`<tr><td><strong>${i+1}º</strong></td><td style="text-align:left; padding-left:20px;">${p.fullName}</td><td>${p.w}</td><td>${p.pf}</td><td>${p.pc}</td><td>${p.d}</td></tr>`).join("")}</tbody>
+        </table></div>`;
 }
 
-// --- Create rounds selector UI (3/4/5) ---
-function createRoundsSelector(){
-  if(document.getElementById("selectRounds")) return;
-  const container = DOM.btnStart.parentElement;
-  if(!container) return;
-  const wrapper = document.createElement("div");
-  wrapper.style.display = "flex";
-  wrapper.style.alignItems = "center";
-  wrapper.style.gap = "8px";
-  const label = document.createElement("label");
-  label.style.fontSize = "14px";
-  label.style.fontWeight = "600";
-  label.textContent = "Rondas:";
-  const select = document.createElement("select");
-  select.id = "selectRounds";
-  select.style.padding = "8px";
-  select.style.borderRadius = "6px";
-  [3,4,5].forEach(n=>{
-    const opt = document.createElement("option");
-    opt.value = n;
-    opt.textContent = n + " rondas";
-    select.appendChild(opt);
-  });
-  select.value = state.settings.roundsToGenerate || 3;
-  select.addEventListener("change", ()=>{
-    state.settings.roundsToGenerate = parseInt(select.value,10);
-    saveState();
-  });
-  wrapper.appendChild(label);
-  wrapper.appendChild(select);
-  container.insertBefore(wrapper, DOM.btnStart);
-}
+get("btnAdd").onclick = addPlayer;
+get("btnStart").onclick = generate;
+get("btnSaveResults").onclick = () => { rank(); save(); alert("Datos guardados."); };
+get("btnClear").onclick = () => { if(confirm("¿Borrar todo?")) { localStorage.clear(); location.reload(); }};
+get("nombreJugador").onkeydown = (e) => { if(e.key === 'Enter') addPlayer(); };
 
-// --- Wire events & boot ---
-function wireEvents(){
-  DOM.btnAdd.addEventListener('click', ()=>{ addPlayer(); });
-  DOM.btnStart.addEventListener('click', ()=>{ generateRounds(); });
-  DOM.btnClear.addEventListener('click', ()=>{ if(confirm('Limpiar todos los datos?')) resetState(); });
-  DOM.btnCalcRanking.addEventListener('click', ()=>{ calculateRanking(); });
-  DOM.btnWhats.addEventListener('click', ()=>{ shareWhatsApp(); });
-  DOM.btnPDF.addEventListener('click', ()=>{ exportPDF(); });
-  DOM.btnSaveResults.addEventListener('click', ()=>{ saveResults(); });
-  DOM.btnKiosk.addEventListener('click', ()=>{ toggleKiosk(); });
-  // keyboard: enter to add
-  DOM.nombre.addEventListener('keydown', e=>{ if(e.key==='Enter'){ addPlayer(); }});
-}
+const sel = document.createElement("select"); sel.id = "selRondas";
+[3,4,5,6].forEach(n => { let o = document.createElement("option"); o.value = n; o.innerText = n + " Rondas"; sel.appendChild(o); });
+get("mainActions").insertBefore(sel, get("btnStart"));
 
-// --- Boot ---
-loadState();
-renderPlayers();
-createRoundsSelector();
-createExportImportUI();
-renderBackupsUI();
-wireEvents();
-if(state.rounds && state.rounds.length>0){
-  DOM.sorteosCard.style.display='block';
-  DOM.rondasContainer.innerHTML=''; renderRounds();
-  DOM.rankingCard.style.display='block';
-}
+init();
