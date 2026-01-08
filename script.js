@@ -51,7 +51,7 @@ function renderEntries() {
                 <div class="dorsal">${i + 1}</div>
                 <span style="font-weight:600;">${item.name}</span>
             </div>
-            <button onclick="removeEntry(${i})" style="color:red; background:none; border:none; font-size:18px; cursor:pointer;">×</button>
+            <button onclick="removeEntry(${i})" style="color:red; background:none; border:none; font-size:18px; cursor:pointer; font-weight:bold;">×</button>
         </div>
     `).join("");
     get("countText").innerText = `Total: ${state.data.length}`;
@@ -156,17 +156,29 @@ function renderRounds() {
             const esDB = m.namesB.toUpperCase().includes("DESCANSA");
             const styleA = esDA ? 'style="color: #FF8C00 !important; font-weight: bold;"' : '';
             const styleB = esDB ? 'style="color: #FF8C00 !important; font-weight: bold;"' : '';
+
+            const dorsalesA = m.tA.members.map(idx => (idx + 1)).join(",");
+            const dorsalesB = m.tB.members.map(idx => (idx + 1)).join(",");
+            
+            const badgeA = esDA ? "" : `<span class="dorsal-partido">${dorsalesA}</span> `;
+            const badgeB = esDB ? "" : `<span class="dorsal-partido">${dorsalesB}</span> `;
+
+            // CAMBIO AQUÍ: 'P' + m.pista por 'PISTA ' + m.pista
+            const textoPista = m.pista === 'L' ? 'LIBRE' : 'PISTA ' + m.pista;
+
             return `
             <div class="equipoBox">
                 <div class="row" style="justify-content:space-between; align-items:center;">
-                    <div id="name_${r.ronda}_${i}_A" class="equipo-nombres ${m.scoreA===13?'winner':''}" style="text-align:left;" ${styleA}>${m.namesA}</div>
+                    <div id="name_${r.ronda}_${i}_A" class="equipo-nombres ${m.scoreA===13?'winner':''}" style="text-align:left;" ${styleA}>
+                        ${badgeA}${m.namesA}
+                    </div>
                     <div class="capsula-score">
                         <input type="number" value="${m.scoreA}" id="s_${r.ronda}_${i}_A" oninput="checkWinner(${r.ronda}, ${i})" style="padding:0; text-align:center;">
                         <span style="font-weight:bold; color:#888;">-</span>
                         <input type="number" value="${m.scoreB}" id="s_${r.ronda}_${i}_B" oninput="checkWinner(${r.ronda}, ${i})" style="padding:0; text-align:center;">
                     </div>
                     <div id="name_${r.ronda}_${i}_B" class="equipo-nombres ${m.scoreB===13?'winner':''}" style="text-align:right;" ${styleB}>
-                        ${m.namesB} <span class="pistaLabel">${m.pista==='L'?'LIBRE':'P'+m.pista}</span>
+                        ${m.namesB} ${badgeB} <span class="pistaLabel">${textoPista}</span>
                     </div>
                 </div>
             </div>`;
@@ -179,11 +191,24 @@ function rank() {
         m.scoreA = parseInt(get(`s_${r.ronda}_${i}_A`).value) || 0;
         m.scoreB = parseInt(get(`s_${r.ronda}_${i}_B`).value) || 0;
     }));
+    
     let s = {};
-    state.data.forEach((d, i) => s[i] = { name: d.name, w: 0, pf: 0, pc: 0, d: 0 });
+    // Mapeamos los datos originales para mantener el dorsal (índice + 1)
+    state.data.forEach((d, i) => {
+        s[i] = { name: d.name, dorsal: i + 1, w: 0, pf: 0, pc: 0, d: 0 };
+    });
+
     state.rounds.forEach(r => r.matches.forEach(m => {
-        const up = (ids, p, o) => ids.forEach(id => { if(s[id]) { s[id].pf += p; s[id].pc += o; s[id].d += (p-o); if(p>o) s[id].w++; }});
-        up(m.tA.members, m.scoreA, m.scoreB); up(m.tB.members, m.scoreB, m.scoreA);
+        const up = (ids, p, o) => ids.forEach(id => { 
+            if(s[id]) { 
+                s[id].pf += p; 
+                s[id].pc += o; 
+                s[id].d += (p-o); 
+                if(p>o) s[id].w++; 
+            }
+        });
+        up(m.tA.members, m.scoreA, m.scoreB); 
+        up(m.tB.members, m.scoreB, m.scoreA);
     }));
 
     const sorted = Object.values(s)
@@ -194,7 +219,7 @@ function rank() {
         <div class="tabla-container">
             <table class="tabla">
                 <thead>
-                    <tr><th>Pos</th><th>Participante</th><th>PG</th><th>PF</th><th>PC</th><th>Dif</th></tr>
+                    <tr><th>Posición</th><th>Dorsal</th><th>Jugad@r</th><th>PG</th><th>PF</th><th>PC</th><th>Dif</th></tr>
                 </thead>
                 <tbody>
                     ${sorted.map((p, i) => {
@@ -202,7 +227,6 @@ function rank() {
                         let claseFila = '';
                         let icono = '';
 
-                        // Asignación de estilos y medallas por posición
                         if (pos === 1) { claseFila = 'class="pos-1"'; icono = '🥇 '; }
                         else if (pos === 2) { claseFila = 'class="pos-2"'; icono = '🥈 '; }
                         else if (pos === 3) { claseFila = 'class="pos-3"'; icono = '🥉 '; }
@@ -213,6 +237,7 @@ function rank() {
                         return `
                         <tr ${claseFila}>
                             <td><strong>${pos}º</strong></td>
+                            <td><span class="dorsal-ranking">${p.dorsal}</span></td>
                             <td style="text-align:left;">${icono}${p.name}</td>
                             <td>${p.w}</td>
                             <td>${p.pf}</td>
