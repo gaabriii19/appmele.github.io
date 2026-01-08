@@ -4,14 +4,8 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Torneo Petanca - Club Torredonjimeno</title>
-
-<!-- Fuentes -->
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&display=swap" rel="stylesheet">
-
-<!-- Estilos -->
 <link rel="stylesheet" href="style.css">
-
-<!-- Librerías para exportar PDF -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <link rel="icon" type="image/png" href="ESCUDO CP TORREDONJIMENO OK.png">
@@ -21,7 +15,7 @@
   <img src="ESCUDO CP TORREDONJIMENO OK.png" alt="Escudo" class="escudo">
   <div>
     <h1>Club Deportivo Petanca Torredonjimeno</h1>
-    <p class="subtitle">App para cuadrante de Torneo (Estilo MELÉ) — Creada por Gabriel Santiago ©</p>
+    <p class="subtitle">App para cuadrante de Torneo (Estilo MELÉ) — Creada por Gabriel Santiago López ©</p>
   </div>
 </header>
 
@@ -30,20 +24,18 @@
     <h2>1. Registro de jugadores</h2>
     <div class="row">
       <input id="nombreJugador" placeholder="Nombre del jugador/ra" />
-      <button id="btnAdd">Añadir</button>
+      <button id="btnAdd" class="primary">Añadir</button>
     </div>
-    <p class="muted">Mínimo 8 jugadores. Máximo 60.</p>
-
+    <p class="muted">Mínimo 8 jugadores. Máximo 60. <span id="playerCount"></span></p>
     <div id="listaJugadores" class="lista"></div>
-
-    <div class="row mt">
+    <div class="row mt" id="mainActions">
       <button id="btnStart" class="primary">Iniciar Sorteos</button>
       <button id="btnClear" class="sec">Limpiar todo</button>
     </div>
-
-    <div class="row mt small">
-      <label><input id="optAvoidRepeat" type="checkbox" checked/> Evitar repetir compañeros siempre que sea posible</label>
-      <label><input id="optAssignPistas" type="checkbox" checked/> Mostrar control visual de pistas</label>
+    <div class="options-grid mt small">
+      <label><input id="optAvoidRepeat" type="checkbox" checked/> Evitar repetir compañeros</label>
+      <label><input id="optAssignPistas" type="checkbox" checked/> Control visual de pistas</label>
+      <label title="Las parejas se forman en la Ronda 1 y no cambian"><input id="optFixedTeams" type="checkbox"/> Parejas fijas todo el torneo</label>
     </div>
   </section>
 
@@ -52,27 +44,18 @@
     <div id="rondasContainer"></div>
     <div class="row mt">
       <button id="btnSaveResults" class="primary">Guardar resultados</button>
-      <button id="btnKiosk" class="sec">Modo Kiosko</button>
     </div>
   </section>
 
   <section id="rankingCard" class="card" style="display:none;">
     <h2>3. Clasificación y Ranking</h2>
-    <div class="row">
-      <button id="btnCalcRanking" class="primary">Calcular Ranking Final</button>
-      <button id="btnWhats" class="sec">Compartir por WhatsApp</button>
-      <button id="btnPDF" class="sec">Exportar a PDF</button>
-    </div>
-    <div id="rankingOutput" class="mt"></div>
+    <div id="rankingOutput" class="mt" style="overflow-x:auto;"></div>
   </section>
-
-  <section class="card small muted">
-    Programa creado y diseñado por Gabriel Santiago ©, para el Club Deportivo de Petanca Torredonjimeno
-  </section>
+  <footer class="app-footer">
+            <img src="ESCUDO CP TORREDONJIMENO OK.png" alt="Logo Club" class="footer-logo">
+            <p>© App creada por Gabriel Santiago López, para el Club Deportivo la Petanca Torredonjimeno</p>
+        </footer>
 </main>
-
-<!-- Script -->
 <script src="script.js"></script>
 </body>
 </html>
-
