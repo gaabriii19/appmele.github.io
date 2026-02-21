@@ -1,85 +1,265 @@
-<!DOCTYPE html><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Gestor Torneos | Club Deportivo la Petanca Torredonjimeno</title>
-    
-    <link rel="icon" type="image/png" href="ESCUDO CP TORREDONJIMENO OK.png">
-    
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>App para gestionar melé</title>
+    <style>
+        :root { --primary: #1a5276; --accent: #d35400; --bg: #e5e8e8; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); color: #2c3e50; margin: 0; padding: 20px; display: flex; flex-direction: column; min-height: 100vh; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); flex: 1; }
+        h1 { text-align: center; color: var(--primary); font-size: 2.2em; margin-bottom: 30px; border-bottom: 4px solid var(--accent); display: inline-block; width: 100%; padding-bottom: 10px; }
+        
+        /* Sección Inscripción */
+        .setup-section { background: #f9f9f9; padding: 20px; border-radius: 10px; margin-bottom: 30px; }
+        .input-group { display: flex; gap: 10px; margin-bottom: 15px; }
+        input[type="text"] { flex: 1; padding: 12px; border: 2px solid #ddd; border-radius: 6px; font-size: 16px; }
+        .btn-add { background: var(--primary); color: white; border: none; padding: 0 20px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .btn-start { background: #27ae60; color: white; border: none; padding: 15px; width: 100%; border-radius: 6px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        
+        #listaJugadores { margin-top: 15px; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+        .player-tag { background: #eee; padding: 8px; border-radius: 4px; font-size: 0.9em; border-left: 3px solid var(--primary); }
+
+        /* Rondas y Partidas */
+        .round-card { border: 1px solid #ccc; border-radius: 10px; margin-bottom: 25px; overflow: hidden; }
+        .round-header { background: var(--primary); color: white; padding: 10px 20px; font-size: 1.2em; font-weight: bold; }
+        .match-row { display: flex; align-items: center; justify-content: space-around; padding: 15px; border-bottom: 1px solid #eee; background: #fff; }
+        .team { flex: 3; font-weight: bold; padding: 0 10px; }
+        .team-a { text-align: right; color: #2e86c1; }
+        .team-b { text-align: left; color: #a04000; }
+        .score-box { flex: 2; display: flex; justify-content: center; align-items: center; gap: 8px; }
+        .score-input { width: 50px; height: 35px; text-align: center; font-size: 1.2em; border: 2px solid #ccc; border-radius: 5px; }
+
+        /* Tabla Clasificación */
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th { background: #34495e; color: white; padding: 12px; }
+        td { border: 1px solid #ddd; padding: 12px; text-align: center; }
+        tr:nth-child(even) { background: #f2f2f2; }
+        .pos-1 { background: #f1c40f !important; font-weight: bold; }
+
+        footer { text-align: center; padding: 20px; font-size: 0.9em; color: #7f8c8d; margin-top: 40px; }
+        .hidden { display: none; }
+        .badge { font-size: 0.7em; padding: 2px 6px; border-radius: 10px; background: #ebf5fb; color: #2980b9; margin-left: 5px; }
+    </style>
 </head>
 <body>
-    <header class="app-header">
-        <img src="ESCUDO CP TORREDONJIMENO OK.png" alt="Escudo" class="escudo">
-        <div>
-            <h1>Gestor Torneos | Club Deportivo la Petanca Torredonjimeno</h1>
-            <p class="subtitle">App con cuadrantes Estilo MELÉ | Creado por Gabriel Santiago López ©</p>
+
+<div class="container">
+    <h1>App para gestionar melé</h1>
+
+    <div id="setup" class="setup-section">
+        <h3>Inscripción de Jugadores</h3>
+        <div class="input-group">
+            <input type="text" id="playerName" placeholder="Nombre del jugador..." onkeypress="if(event.key==='Enter') añadirJugador()">
+            <button class="btn-add" onclick="añadirJugador()">Añadir</button>
         </div>
-    </header>
-
-    <main class="container">
-        <section class="card" id="modeSelectorCard">
-            <h2>Elegir Modalidad de Juego</h2>
-            <div class="mode-grid">
-                <button onclick="setMode('mele')" id="btnMele" class="mode-btn">
-                    <strong>MELÉ a JUGADOR@S a SORTEO</strong><br>Dupletas o Tripletas
-                </button>
-                <button onclick="setMode('montadas')" id="btnMontadas" class="mode-btn">
-                    <strong>MELÉ a EQUIPOS MONTADOS</strong><br>Solo Dupletas
-                </button>
-            </div>
-        </section>
-
-        <section id="mainCard" class="card" style="display:none;">
-            <h2 id="titleRegistro">1. Registro</h2>
-            <div class="row">
-                <input id="inputNombre" type="text" placeholder="..." />
-                <button id="btnAdd" class="primary">Añadir</button>
-            </div>
-			<div class="info-registro mt">
-        <p class="count-main"><span id="countText"></span></p>
-        <p class="muted" id="limitsText">Mínimo 8 jugadores — Máximo 60</p>
+        <div id="listaJugadores"></div>
+        <button class="btn-start" onclick="iniciarTorneo()">Generar 4 Rondas (Sin Repeticiones)</button>
     </div>
-            <p class="muted"><span id="countText"></span></p>
-            <div id="listaEntradas" class="lista"></div>
 
-            <div class="options-grid">
-				<h5>Opciónes de competición:</h5>
-                <label id="labelAvoid"><input id="optAvoidRepeat" type="checkbox" checked/> Evitar repetir compañeros</label>
-                <label id="labelFixed"><input id="optFixedTeams" type="checkbox"/> Parejas fijas todo el torneo</label>
-                <label><input id="optAssignPistas" type="checkbox" checked/> Control de pistas</label>
-            </div>
+    <div id="tournament" class="hidden">
+        <div id="rondasContainer"></div>
+        <button class="btn-start" style="background: #2980b9;" onclick="actualizarClasificacion()">Calcular Clasificación</button>
+        
+        <div id="rankingSection" class="hidden">
+            <h2 style="text-align:center">📊 Clasificación Final</h2>
+            <table id="tablaRanking">
+                <thead>
+                    <tr>
+                        <th>Pos</th>
+                        <th>Jugador</th>
+                        <th>PG</th>
+                        <th>Dif</th>
+                        <th>PF</th>
+                        <th>PC</th>
+                    </tr>
+                </thead>
+                <tbody id="cuerpoClasificacion"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
 
-            <div class="row mt" id="mainActions">
-                <button id="btnStart" class="primary">Generar Torneo</button>
-                <button id="btnBack" class="sec">Cambiar Modo</button>
-                <button id="btnClear" class="sec" style="color:red">Borrar Todo</button>
-            </div>
-        </section>
+<footer>
+    &copy; 2026 App creada por <strong>Gabriel Santiago</strong> para el <strong>Club Petanca Jaén Paraíso</strong>
+</footer>
 
-        <section id="sorteosCard" class="card" style="display:none;">
-            <h2>2. Enfrentamientos y Resultados</h2>
-            <div id="rondasContainer"></div>
-            <div class="row mt">
-                <button id="btnSaveResults" class="primary">Confirmar Puntuaciones</button>
-            </div>
-        </section>
+<script>
+    let jugadores = [];
+    let historialCompañeros = {}; // Para evitar repeticiones
+    let rondasData = [];
 
-        <section id="rankingCard" class="card" style="display:none;">
-            <h2>3. Clasificación Final</h2>
-            <div id="rankingOutput" class="mt"></div>
-        </section>
+    function añadirJugador() {
+        const input = document.getElementById('playerName');
+        const nombre = input.value.trim();
+        if (nombre && !jugadores.includes(nombre)) {
+            jugadores.push(nombre);
+            historialCompañeros[nombre] = new Set();
+            actualizarListaInscritos();
+            input.value = "";
+            input.focus();
+        }
+    }
 
-        <footer class="app-footer">
-            <img src="ESCUDO CP TORREDONJIMENO OK.png" alt="Logo Club" class="footer-logo">
-            <p>App creada por Gabriel Santiago López ©, para el Club Deportivo la Petanca Torredonjimeno</p>
-			<p>2026</p>
-        </footer>
-    </main>
+    function actualizarListaInscritos() {
+        const div = document.getElementById('listaJugadores');
+        div.innerHTML = jugadores.map((n, i) => `<div class="player-tag">${i + 1}. ${n}</div>`).join('');
+    }
 
-    <script src="script.js"></script>
+    function iniciarTorneo() {
+        if (jugadores.length < 4) return alert("Se necesitan al menos 4 jugadores.");
+        
+        rondasData = [];
+        for (let i = 1; i <= 4; i++) {
+            const ronda = generarRondaSinRepetir(i);
+            if (!ronda) { // Fallback si el algoritmo se bloquea por falta de combinaciones
+                alert("Aviso: Debido al número de jugadores, ha sido difícil evitar repeticiones en la ronda " + i);
+            }
+            rondasData.push(ronda);
+        }
+
+        renderizarTorneo();
+        document.getElementById('setup').classList.add('hidden');
+        document.getElementById('tournament').classList.remove('hidden');
+    }
+
+    function generarRondaSinRepetir(numRonda) {
+        let intentos = 0;
+        while (intentos < 100) { // Intentar varias veces si el cruce es imposible
+            let pool = [...jugadores];
+            shuffle(pool);
+            let matches = [];
+            let errorRepeticion = false;
+
+            while (pool.length > 0) {
+                let nA = 2, nB = 2;
+                if (pool.length === 6) { nA = 3; nB = 3; }
+                else if (pool.length === 5) { nA = 3; nB = 2; }
+                else if (pool.length === 7) { nA = 4; nB = 3; }
+
+                let teamA = pool.splice(0, nA);
+                let teamB = pool.splice(0, nB);
+
+                // Verificar si alguien de TeamA ya jugó con alguien de TeamA
+                if (hayRepetidos(teamA) || hayRepetidos(teamB)) {
+                    errorRepeticion = true;
+                    break;
+                }
+
+                matches.push({ teamA, teamB, sA: 0, sB: 0 });
+            }
+
+            if (!errorRepeticion) {
+                // Registrar compañeros en el historial
+                matches.forEach(m => {
+                    registrarCompañeros(m.teamA);
+                    registrarCompañeros(m.teamB);
+                });
+                return { numRonda, matches };
+            }
+            intentos++;
+        }
+        return generarRondaBasica(numRonda); // Si falla el anti-repetición, hace uno aleatorio
+    }
+
+    function hayRepetidos(equipo) {
+        for (let i = 0; i < equipo.length; i++) {
+            for (let j = i + 1; j < equipo.length; j++) {
+                if (historialCompañeros[equipo[i]].has(equipo[j])) return true;
+            }
+        }
+        return false;
+    }
+
+    function registrarCompañeros(equipo) {
+        equipo.forEach(j1 => {
+            equipo.forEach(j2 => {
+                if (j1 !== j2) historialCompañeros[j1].add(j2);
+            });
+        });
+    }
+
+    function generarRondaBasica(num) {
+        let pool = [...jugadores]; shuffle(pool);
+        let matches = [];
+        while (pool.length > 0) {
+            let nA = (pool.length === 6 || pool.length === 5) ? 3 : 2;
+            let nB = (pool.length === 6) ? 3 : (pool.length === 5) ? 2 : 2;
+            matches.push({ teamA: pool.splice(0, nA), teamB: pool.splice(0, nB), sA: 0, sB: 0 });
+        }
+        return { numRonda: num, matches };
+    }
+
+    function renderizarTorneo() {
+        const container = document.getElementById('rondasContainer');
+        container.innerHTML = "";
+        rondasData.forEach((r, rIdx) => {
+            let html = `<div class="round-card"><div class="round-header">Ronda ${r.numRonda}</div>`;
+            r.matches.forEach((m, mIdx) => {
+                html += `
+                <div class="match-row">
+                    <div class="team team-a">${m.teamA.join(' - ')} ${m.teamA.length > 2 ? '<span class="badge">T</span>':''}</div>
+                    <div class="score-box">
+                        <input type="number" class="score-input" onchange="rondasData[${rIdx}].matches[${mIdx}].sA=parseInt(this.value)||0">
+                        <span>-</span>
+                        <input type="number" class="score-input" onchange="rondasData[${rIdx}].matches[${mIdx}].sB=parseInt(this.value)||0">
+                    </div>
+                    <div class="team team-b">${m.teamB.length > 2 ? '<span class="badge">T</span>':''} ${m.teamB.join(' - ')}</div>
+                </div>`;
+            });
+            container.innerHTML += html + `</div>`;
+        });
+    }
+
+    function actualizarClasificacion() {
+        let stats = {};
+        jugadores.forEach(j => stats[j] = { n: j, pg: 0, pf: 0, pc: 0, dif: 0, rivalesDirectos: {} });
+
+        rondasData.forEach(r => {
+            r.matches.forEach(m => {
+                m.teamA.forEach(j => procesarStats(j, m.sA, m.sB, m.teamB, stats));
+                m.teamB.forEach(j => procesarStats(j, m.sB, m.sA, m.teamA, stats));
+            });
+        });
+
+        let ranking = Object.values(stats).sort((a, b) => {
+            if (b.pg !== a.pg) return b.pg - a.pg;
+            if ((b.pf-b.pc) !== (a.pf-a.pc)) return (b.pf-b.pc) - (a.pf-a.pc);
+            if (b.pf !== a.pf) return b.pf - a.pf;
+            // Enfrentamiento directo
+            return (a.rivalesDirectos[b.n] || 0) < (b.rivalesDirectos[a.n] || 0) ? 1 : -1;
+        });
+
+        const tbody = document.getElementById('cuerpoClasificacion');
+        tbody.innerHTML = ranking.map((s, i) => `
+            <tr class="${i === 0 ? 'pos-1' : ''}">
+                <td>${i + 1}</td>
+                <td>${s.n}</td>
+                <td>${s.pg}</td>
+                <td>${s.pf - s.pc}</td>
+                <td>${s.pf}</td>
+                <td>${s.pc}</td>
+            </tr>`).join('');
+        document.getElementById('rankingSection').classList.remove('hidden');
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function procesarStats(jugador, pf, pc, rivales, statsObj) {
+        statsObj[jugador].pf += pf;
+        statsObj[jugador].pc += pc;
+        if (pf > pc) statsObj[jugador].pg++;
+        rivales.forEach(riv => {
+            if (!statsObj[jugador].rivalesDirectos[riv]) statsObj[jugador].rivalesDirectos[riv] = 0;
+            if (pf > pc) statsObj[jugador].rivalesDirectos[riv]++;
+        });
+    }
+
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+    }
+</script>
 </body>
 </html>
-
