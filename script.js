@@ -1,285 +1,261 @@
-:root {
-  --primary: #d2cc99; 
-  --dark: #1f2b20; 
-  --bg: #f0f2eb; 
-  --card: #ffffff;
-  --muted: #6b6b6b; 
-  --radius: 12px; 
-  --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  --winner: #27ae60; 
-  --loser: #e74c3c;
-  /* Colores del Ranking */
-  --oro: #fff9c4;
-  --plata: #f5f5f5;
-  --cobre: #ffe0b2;
-  --top4: #e1f5fe;
-  --top5: #f1f8e9;
-  --top6: #f3e5f5;
-  font-family: 'Montserrat', sans-serif;
-}
+const LS_KEY = "petanca_v12_final_restaurada";
+let state = { mode: null, data: [], rounds: [] };
 
-* { box-sizing: border-box; }
+const get = (id) => document.getElementById(id);
+const save = () => localStorage.setItem(LS_KEY, JSON.stringify(state));
 
-body { 
-  margin: 0; 
-  background-color: var(--bg); 
-  color: var(--dark); 
-  line-height: 1.6; 
-}
-
-/* Animación de entrada */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.card, .equipoBox, tr {
-  animation: fadeIn 0.4s ease-out forwards;
-}
-
-.app-header { 
-  display: flex; 
-  flex-direction: column; 
-  gap: 15px; 
-  align-items: center; 
-  justify-content: center;
-  padding: 30px 20px; 
-  background: var(--primary); 
-  border-bottom: 5px solid var(--dark); 
-  text-align: center; 
-}
-
-.app-header .escudo { 
-  width: 140px; /* Tamaño grande y destacado */
-  height: auto; 
-  border-radius: 15px; 
-  box-shadow: 0 4px 15px rgba(0,0,0,0.2); 
-  margin-bottom: 10px;
-}
-
-.app-header h1 { 
-  margin: 0; 
-  font-size: 1.6rem; 
-  text-transform: uppercase; 
-  white-space: nowrap; /* ESTO EVITA EL SALTO DE LÍNEA */
-  letter-spacing: -0.5px;
-}
-
-.subtitle {
-  margin: 8px 0 0 0;
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: rgba(31, 43, 32, 0.7);
-}
-
-/* Ajuste para que en móviles no se corte si el título es muy largo */
-@media (max-width: 600px) {
-    .app-header h1 {
-        font-size: 1.1rem;
-        white-space: normal; /* En móviles muy pequeños permitimos el salto para que no se salga de la pantalla */
+function init() {
+    const raw = localStorage.getItem(LS_KEY);
+    if (raw) {
+        state = JSON.parse(raw);
+        updateUI();
+        if (state.rounds.length > 0) {
+            renderRounds();
+            renderResumen();
+        }
     }
 }
 
-.container { max-width: 950px; margin: 30px auto; padding: 0 15px; }
-
-.card { 
-  background: var(--card); 
-  padding: 25px; 
-  border-radius: var(--radius); 
-  box-shadow: var(--shadow); 
-  margin-bottom: 25px; 
-  border-left: 5px solid var(--primary); 
+function setMode(m) {
+    state.mode = m; state.data = []; state.rounds = [];
+    updateUI(); save();
 }
 
-h2 { 
-  margin-top: 0; 
-  font-size: 1.1rem; 
-  color: var(--dark); 
-  text-transform: uppercase; 
-  border-bottom: 2px solid #eee; 
-  padding-bottom: 10px; 
+function updateUI() {
+    if (!state.mode) {
+        get("modeSelectorCard").style.display = "block";
+        get("mainCard").style.display = "none";
+        get("sorteosCard").style.display = "none";
+        get("rankingCard").style.display = "none";
+        get("resumenCompañerosCard").style.display = "none";
+        return;
+    }
+    get("modeSelectorCard").style.display = "none";
+    get("mainCard").style.display = "block";
+    const isMele = state.mode === 'mele';
+    get("titleRegistro").innerText = isMele ? "1. Registro de Jugadores (Melé)" : "1. Registro de Parejas Montadas";
+    get("inputNombre").placeholder = isMele ? "Nombre..." : "Nombre Pareja...";
+    renderEntries();
 }
 
-.row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-
-input, select { 
-  padding: 12px; 
-  border-radius: 8px; 
-  border: 2px solid #e1e1d6; 
-  outline: none; 
-  flex: 1; 
-  font-family: inherit; 
+function addEntry() {
+    const val = get("inputNombre").value.trim();
+    if (!val) return;
+    state.data.push({ name: val });
+    get("inputNombre").value = "";
+    save(); renderEntries();
 }
 
-button { 
-  cursor: pointer; 
-  border: 0; 
-  padding: 12px 20px; 
-  border-radius: 8px; 
-  font-weight: 700; 
-  text-transform: uppercase; 
-  font-size: 11px; 
-  transition: 0.2s; 
+window.removeEntry = (i) => { state.data.splice(i, 1); save(); renderEntries(); };
+
+function renderEntries() {
+    get("listaEntradas").innerHTML = state.data.map((item, i) => `
+        <div class="jugador">
+            <div style="display:flex; align-items:center;">
+                <div class="dorsal">${i + 1}</div>
+                <span style="font-weight:600;">${item.name}</span>
+            </div>
+            <button onclick="removeEntry(${i})" style="color:red; background:none; border:none; font-size:18px; cursor:pointer; font-weight:bold;">×</button>
+        </div>
+    `).join("");
+    get("countText").innerText = `Total: ${state.data.length}`;
 }
 
-button:hover { filter: brightness(0.9); transform: translateY(-1px); }
-button.primary { background: var(--dark); color: white; }
-button.sec { background: #eee; }
+window.checkWinner = (r, i) => {
+    const valA = parseInt(get(`s_${r}_${i}_A`).value) || 0;
+    const valB = parseInt(get(`s_${r}_${i}_B`).value) || 0;
+    const labelA = get(`name_${r}_${i}_A`);
+    const labelB = get(`name_${r}_${i}_B`);
+    labelA.classList.remove("winner", "loser");
+    labelB.classList.remove("winner", "loser");
+    if (valA > valB) { labelA.classList.add("winner"); labelB.classList.add("loser"); }
+    else if (valB > valA) { labelB.classList.add("winner"); labelA.classList.add("loser"); }
+};
 
-.lista { 
-  margin-top: 15px; 
-  display: grid; 
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); 
-  gap: 10px; 
+// GENERACIÓN DEL TORNEO CON REGLA DE COMPAÑEROS ÚNICOS
+function generate() {
+    let entries = [...state.data];
+    const n = entries.length;
+    if (state.mode === 'mele' && n < 8) return alert("Mínimo 8 jugadores.");
+    if (state.mode === 'montadas' && n < 4) return alert("Mínimo 4 parejas.");
+
+    let tieneDescanso = false;
+    if (state.mode === 'montadas' && n % 2 !== 0) {
+        if (!entries.some(e => e.name === "DESCANSA")) entries.push({ name: "DESCANSA" });
+        tieneDescanso = true;
+    }
+
+    const numRondas = parseInt(get("selRondas").value);
+    state.rounds = [];
+    let historialCompañeros = Array.from({ length: entries.length }, () => ({}));
+    let yaDescansaron = [];
+
+    for (let r = 1; r <= numRondas; r++) {
+        let matchesRonda = [];
+        let teamsRonda = [];
+        let matchDescanso = null;
+        let rondaValida = false;
+        let intentos = 0;
+
+        while (!rondaValida && intentos < 100) {
+            intentos++;
+            let pool = entries.map((_, i) => i).sort(() => Math.random() - 0.5);
+            let teamsTemp = [];
+            let errorRepeticion = false;
+
+            if (state.mode === 'mele') {
+                let idx = 0;
+                const numEnf = n >= 40 ? 10 : Math.floor(n / 4);
+                const numTrip = n - ((numEnf * 2) * 2);
+                const numDup = (numEnf * 2) - numTrip;
+
+                for (let i = 0; i < numDup; i++) {
+                    let p1 = pool[idx++], p2 = pool[idx++];
+                    if (historialCompañeros[p1][p2]) { errorRepeticion = true; break; }
+                    teamsTemp.push({ members: [p1, p2] });
+                }
+                if (!errorRepeticion) {
+                    for (let i = 0; i < numTrip; i++) {
+                        let p1 = pool[idx++], p2 = pool[idx++], p3 = pool[idx++];
+                        if (historialCompañeros[p1][p2] || historialCompañeros[p1][p3] || historialCompañeros[p2][p3]) { 
+                            errorRepeticion = true; break; 
+                        }
+                        teamsTemp.push({ members: [p1, p2, p3] });
+                    }
+                }
+            } else {
+                // MODO MONTADAS
+                let idxDescansa = entries.findIndex(e => e.name === "DESCANSA");
+                let poolParejas = entries.map((_, i) => i);
+                if (tieneDescanso && idxDescansa !== -1) {
+                    let candidatos = poolParejas.filter(idx => idx !== idxDescansa && !yaDescansaron.includes(idx));
+                    if (candidatos.length === 0) { yaDescansaron = []; candidatos = poolParejas.filter(idx => idx !== idxDescansa); }
+                    let elegidoIdx = candidatos[Math.floor(Math.random() * candidatos.length)];
+                    yaDescansaron.push(elegidoIdx);
+                    matchDescanso = {
+                        namesA: entries[elegidoIdx].name, namesB: "DESCANSA",
+                        scoreA: 13, scoreB: 5, pista: "L",
+                        tA: { members: [elegidoIdx] }, tB: { members: [idxDescansa] }
+                    };
+                    poolParejas = poolParejas.filter(i => i !== elegidoIdx && i !== idxDescansa);
+                }
+                poolParejas.sort(() => Math.random() - 0.5);
+                for (let i = 0; i < poolParejas.length; i++) teamsTemp.push({ members: [poolParejas[i]] });
+                errorRepeticion = false;
+            }
+
+            if (!errorRepeticion) {
+                teamsRonda = teamsTemp;
+                rondaValida = true;
+            }
+        }
+
+        // Registrar compañeros en el historial
+        teamsRonda.forEach(t => {
+            for (let i = 0; i < t.members.length; i++) {
+                for (let j = i + 1; j < t.members.length; j++) {
+                    let p1 = t.members[i], p2 = t.members[j];
+                    historialCompañeros[p1][p2] = true;
+                    historialCompañeros[p2][p1] = true;
+                }
+            }
+        });
+
+        teamsRonda.sort(() => Math.random() - 0.5);
+        for (let i = 0; i < teamsRonda.length; i += 2) {
+            if (teamsRonda[i+1] === undefined) break;
+            matchesRonda.push({
+                namesA: teamsRonda[i].members.map(idx => entries[idx].name).join(" / "),
+                namesB: teamsRonda[i+1].members.map(idx => entries[idx].name).join(" / "),
+                scoreA: 0, scoreB: 0, pista: matchesRonda.length + 1,
+                tA: teamsRonda[i], tB: teamsRonda[i+1]
+            });
+        }
+        if (matchDescanso) matchesRonda.push(matchDescanso);
+        state.rounds.push({ ronda: r, matches: matchesRonda });
+    }
+    state.data = entries;
+    save(); renderRounds(); renderResumen();
 }
 
-.jugador { 
-  display: flex; 
-  justify-content: space-between; 
-  padding: 10px; 
-  background: #f9f9f7; 
-  border-radius: 8px; 
-  border: 1px solid #eee; 
-  align-items: center; 
+function renderResumen() {
+    const resumenCard = get("resumenCompañerosCard");
+    const listaResumen = get("listaResumen");
+    if (state.rounds.length === 0) { resumenCard.style.display = "none"; return; }
+    resumenCard.style.display = "block";
+    let porJugador = {};
+    state.data.forEach((p, i) => { if(p.name !== "DESCANSA") porJugador[i] = []; });
+    state.rounds.forEach(r => {
+        r.matches.forEach(m => {
+            const processTeam = (currentTeam, otherTeam, otherNames) => {
+                currentTeam.members.forEach(idx => {
+                    if(state.data[idx].name === "DESCANSA") return;
+                    const comps = currentTeam.members.filter(i => i !== idx).map(i => state.data[i].name);
+                    const compText = comps.length > 0 ? `<strong>${comps.join(" / ")}</strong>` : "Pareja Fija";
+                    let infoRival = otherNames.includes("DESCANSA") ? "🟡 <strong style='color:#e67e22;'>DESCANSA (13-5)</strong>" : `vs <strong>${otherNames}</strong> (Pista ${m.pista})`;
+                    porJugador[idx].push(`<li>R${r.ronda}: Con ${compText} ${infoRival}</li>`);
+                });
+            };
+            processTeam(m.tA, m.tB, m.namesB);
+            processTeam(m.tB, m.tA, m.namesA);
+        });
+    });
+    let html = "";
+    for (let idx in porJugador) {
+        html += `<div class="equipoBox" style="font-size:12px; border-top: 3px solid var(--primary);">
+            <div style="margin-bottom:5px;"><span class="dorsal" style="display:inline-flex;">${parseInt(idx)+1}</span> <strong style="text-transform:uppercase;">${state.data[idx].name}</strong></div>
+            <ul style="padding-left:15px; margin:0; list-style-type: none;">${porJugador[idx].join("")}</ul>
+        </div>`;
+    }
+    listaResumen.innerHTML = `<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:10px;">${html}</div>`;
 }
 
-.dorsal { 
-  background: var(--dark); 
-  color: var(--primary); 
-  width: 22px; 
-  height: 22px; 
-  display: flex; 
-  align-items: center; 
-  justify-content: center; 
-  border-radius: 50%; 
-  font-size: 10px; 
-  font-weight: 800; 
-  margin-right: 8px; 
+function renderRounds() {
+    get("sorteosCard").style.display = "block"; get("rankingCard").style.display = "block";
+    get("rondasContainer").innerHTML = state.rounds.map(r => `
+        <div class="mt" style="background:var(--dark); color:white; padding:10px 15px; border-radius:8px; font-size:12px;"><strong>RONDA ${r.ronda}</strong></div>
+        ${r.matches.map((m, i) => {
+            const textoPista = m.pista === 'L' ? 'LIBRE' : 'PISTA ' + m.pista;
+            return `<div class="equipoBox"><div class="row" style="justify-content:space-between; align-items:center;">
+                <div id="name_${r.ronda}_${i}_A" class="equipo-nombres ${m.scoreA > m.scoreB?'winner':''}" style="text-align:left;">${m.namesA}</div>
+                <div class="capsula-score">
+                    <input type="number" value="${m.scoreA}" id="s_${r.ronda}_${i}_A" oninput="checkWinner(${r.ronda}, ${i})">
+                    <span style="font-weight:bold; color:#888;">-</span>
+                    <input type="number" value="${m.scoreB}" id="s_${r.ronda}_${i}_B" oninput="checkWinner(${r.ronda}, ${i})">
+                </div>
+                <div id="name_${r.ronda}_${i}_B" class="equipo-nombres ${m.scoreB > m.scoreA?'winner':''}" style="text-align:right;">${m.namesB} <span class="pistaLabel">${textoPista}</span></div>
+            </div></div>`;
+        }).join("")}
+    `).join("");
 }
 
-.equipoBox { 
-  background: #fff; 
-  border: 1px solid #eee; 
-  padding: 15px; 
-  margin-bottom: 12px; 
-  border-radius: 10px; 
-  transition: transform 0.2s;
+function rank() {
+    state.rounds.forEach(r => r.matches.forEach((m, i) => {
+        m.scoreA = parseInt(get(`s_${r.ronda}_${i}_A`).value) || 0;
+        m.scoreB = parseInt(get(`s_${r.ronda}_${i}_B`).value) || 0;
+    }));
+    let s = {};
+    state.data.forEach((d, i) => { s[i] = { name: d.name, dorsal: i + 1, w: 0, pf: 0, pc: 0, d: 0 }; });
+    state.rounds.forEach(r => r.matches.forEach(m => {
+        const up = (ids, p, o) => ids.forEach(id => { if(s[id]) { s[id].pf += p; s[id].pc += o; s[id].d += (p-o); if(p>o) s[id].w++; }});
+        up(m.tA.members, m.scoreA, m.scoreB); up(m.tB.members, m.scoreB, m.scoreA);
+    }));
+    const sorted = Object.values(s).filter(x => x.name !== "DESCANSA").sort((a,b) => b.w - a.w || b.d - a.d || b.pf - a.pf);
+    get("rankingOutput").innerHTML = `<div class="tabla-container"><table class="tabla"><thead><tr><th>Pos</th><th>Dorsal</th><th>Jugad@r</th><th>PG</th><th>PF</th><th>PC</th><th>Dif</th></tr></thead>
+    <tbody>${sorted.map((p, i) => `<tr class="${i<1?'pos-1':''}"><td><strong>${i+1}º</strong></td><td><span class="dorsal-ranking">${p.dorsal}</span></td><td style="text-align:left;">${p.name}</td><td>${p.w}</td><td>${p.pf}</td><td>${p.pc}</td><td>${p.d}</td></tr>`).join("")}</tbody></table></div>
+    <button onclick="rank()" class="primary mt">Actualizar Ranking</button>`;
 }
 
-.equipoBox:hover { transform: scale(1.01); border-color: var(--primary); }
+get("btnAdd").onclick = addEntry;
+get("btnStart").onclick = generate;
+get("btnSaveResults").onclick = () => { rank(); save(); alert("Resultados Guardados."); };
+get("btnBack").onclick = () => { if(confirm("¿Cambiar modo?")) { state.mode = null; save(); location.reload(); }};
+get("btnClear").onclick = () => { if(confirm("¿Borrar todo?")) { localStorage.clear(); location.reload(); }};
+get("inputNombre").onkeydown = (e) => { if(e.key === 'Enter') addEntry(); };
 
-.equipo-nombres { font-weight: 600; font-size: 13.5px; flex: 2; }
-.winner { color: var(--winner) !important; font-weight: 800 !important; }
-.loser { color: var(--loser) !important; font-weight: 800 !important; }
-
-.capsula-score { 
-  display: flex; 
-  background: #f0f0f0; 
-  padding: 5px 12px; 
-  border-radius: 50px; 
-  gap: 8px; 
-  align-items: center; 
-  border: 1px solid #ddd; 
+if(!get("selRondas")) {
+    const sel = document.createElement("select"); sel.id = "selRondas";
+    [3,4,5,6].forEach(n => { let o = document.createElement("option"); o.value = n; o.innerText = n + " Rondas"; sel.appendChild(o); });
+    get("mainActions").insertBefore(sel, get("btnStart"));
 }
-
-.capsula-score input {
-  width: 45px !important; 
-  height: 35px; 
-  text-align: center; 
-  padding: 0 !important;
-  font-weight: 800; 
-  border: 1px solid #ccc; 
-  border-radius: 20px; 
-  background: white;
-}
-
-input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { 
-  -webkit-appearance: none; 
-  margin: 0; 
-}
-
-.pistaLabel { 
-  background: var(--dark); 
-  color: var(--primary); 
-  padding: 4px 12px; 
-  border-radius: 20px; 
-  font-size: 10px; 
-  margin-left: 10px; 
-  font-weight: 700; 
-}
-
-/* --- ESTILOS DE RANKING TOP 6 --- */
-.tabla-container { overflow-x: auto; border-radius: 8px; margin-top: 15px; }
-.tabla { width: 100%; border-collapse: collapse; background: white; min-width: 600px; }
-.tabla th { background: var(--dark); color: white; padding: 12px; font-size: 11px; }
-.tabla td { padding: 12px; border-bottom: 1px solid #eee; text-align: center; }
-
-.pos-1 { background-color: var(--oro) !important; color: #856404 !important; font-weight: bold; }
-/*.pos-2 { background-color: var(--plata) !important; color: #455a64 !important; font-weight: bold; }
-.pos-3 { background-color: var(--cobre) !important; color: #e65100 !important; font-weight: bold; }
-.pos-4 { background-color: var(--top4) !important; color: #01579b !important; }
-.pos-5 { background-color: var(--top5) !important; color: #33691e !important; }
-.pos-6 { background-color: var(--top6) !important; color: #4a148c !important; }*/
-
-.medalla { font-size: 1.1rem; margin-right: 8px; vertical-align: middle; }
-
-/* --- MODOS DE JUEGO --- */
-.mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
-.mode-btn { 
-  padding: 20px; border: 2px solid #e1e1d6; background: #f9f9f7; 
-  border-radius: 12px; cursor: pointer; transition: 0.3s; 
-}
-.mode-btn:hover { border-color: var(--dark); background: #fff; box-shadow: var(--shadow); }
-
-.mt { margin-top: 20px; }
-.muted { color: var(--muted); font-size: 12px; }
-
-.pistaLabel { 
-  background: var(--dark); 
-  color: var(--primary); 
-  padding: 4px 10px; /* Reducimos un poco el padding lateral */
-  border-radius: 6px; /* Cambiamos a un radio más cuadrado para que parezca una placa */
-  font-size: 9px; 
-  margin-left: 8px; 
-  font-weight: 700;
-  white-space: nowrap; /* Evita que el texto de la pista se rompa */
-}
-
-.dorsal-partido {
-    background: #eee;
-    color: #555;
-    font-size: 10px;
-    padding: 2px 6px;
-    border-radius: 4px;
-    margin-right: 5px;
-    border: 1px solid #ddd;
-    font-weight: 800;
-}
-
-.dorsal-ranking {
-    background: var(--dark);
-    color: var(--primary);
-    width: 22px;
-    height: 22px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    font-size: 10px;
-    font-weight: 800;
-}
-
-.app-footer {
-    margin-top: 50px;
-    padding: 30px 10px;
-    text-align: center;
-    border-top: 1px solid #e1e1d6;
-    color: var(--muted);
-}
-
-.footer-logo {
-    width: 40px; height: 40px; opacity: 0.6; margin-bottom: 10px; transition: 0.3s;
-}
-
-.app-footer:hover .footer-logo { opacity: 1; }
-.app-footer p { font-size: 11px; letter-spacing: 0.5px; margin: 0; }
+init();
