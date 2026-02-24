@@ -35,15 +35,14 @@
                 <input id="inputNombre" type="text" placeholder="..." />
                 <button id="btnAdd" class="primary">Añadir</button>
             </div>
-			<div class="info-registro mt">
-        <p class="count-main"><span id="countText"></span></p>
-        <p class="muted" id="limitsText">Mínimo 8 jugadores — Máximo 60</p>
-    </div>
-            <p class="muted"><span id="countText"></span></p>
+            <div class="info-registro mt">
+                <p class="count-main"><span id="countText"></span></p>
+                <p class="muted" id="limitsText">Mínimo 8 jugadores — Máximo 60</p>
+            </div>
             <div id="listaEntradas" class="lista"></div>
 
-            <div class="options-grid">
-				<h5>Opciónes de competición:</h5>
+            <div class="options-grid mt">
+                <h5>Opciones de competición:</h5>
                 <label id="labelAvoid"><input id="optAvoidRepeat" type="checkbox" checked/> Evitar repetir compañeros</label>
                 <label id="labelFixed"><input id="optFixedTeams" type="checkbox"/> Parejas fijas todo el torneo</label>
                 <label><input id="optAssignPistas" type="checkbox" checked/> Control de pistas</label>
@@ -54,6 +53,12 @@
                 <button id="btnBack" class="sec">Cambiar Modo</button>
                 <button id="btnClear" class="sec" style="color:red">Borrar Todo</button>
             </div>
+        </section>
+
+        <section id="resumenCompañerosCard" class="card" style="display:none; border-left-color: #3498db;">
+            <h2>Hoja de Ruta de Jugadores</h2>
+            <p class="muted">Consulta aquí tus compañeros, rivales y pistas para cada ronda:</p>
+            <div id="listaResumen" class="mt"></div>
         </section>
 
         <section id="sorteosCard" class="card" style="display:none;">
@@ -72,7 +77,7 @@
         <footer class="app-footer">
             <img src="ESCUDO CP TORREDONJIMENO OK.png" alt="Logo Club" class="footer-logo">
             <p>App creada por Gabriel Santiago López ©, para el Club Deportivo la Petanca Torredonjimeno</p>
-			<p>2026</p>
+            <p>2026</p>
         </footer>
     </main>
 
