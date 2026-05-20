@@ -72,7 +72,7 @@ window.checkWinner = (r, i) => {
     else if (valB > valA) { labelB.classList.add("winner"); labelA.classList.add("loser"); }
 };
 
-// GENERACIÓN DEL TORNEO CON REGLA DE COMPAÑEROS ÚNICOS
+// GENERACIÓN DEL TORNEO SIN LÍMITE DE PISTAS (CAMPOS ILIMITADOS)
 function generate() {
     let entries = [...state.data];
     const n = entries.length;
@@ -105,7 +105,8 @@ function generate() {
 
             if (state.mode === 'mele') {
                 let idx = 0;
-                const numEnf = n >= 40 ? 10 : Math.floor(n / 4);
+                // CAMBIO CLAVE: Se elimina el límite de "n >= 40 ? 10". Ahora se calcula siempre según el total real.
+                const numEnf = Math.floor(n / 4);
                 const numTrip = n - ((numEnf * 2) * 2);
                 const numDup = (numEnf * 2) - numTrip;
 
